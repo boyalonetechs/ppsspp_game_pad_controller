@@ -196,6 +196,15 @@
         stroke-width: 3px;
       }
 
+      button[data-btn] {
+        transition:
+          background 0.08s,
+          color 0.08s;
+      }
+      button[data-btn].pressed {
+        transform: scale(1.5);
+      }
+
       /* Custom polygon cutouts for L & R top shoulders */
       .shoulder.l {
         left: calc(var(--sal) + 18px);
@@ -212,6 +221,10 @@
       .shoulder.pressed {
         --shoulder-fill: rgba(212, 227, 243, 0.35);
         color: #fff;
+      }
+      button.shoulder[data-btn].pressed {
+        transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(var(--s, 1))
+          scale(1.5);
       }
 
       /* ---------------------------------------------------------------- dpad */
@@ -262,6 +275,13 @@
         vector-effect: non-scaling-stroke;
       }
 
+      #dpad .arrow-outline rect {
+        fill: none;
+        stroke: var(--line);
+        stroke-width: 3;
+        vector-effect: non-scaling-stroke;
+      }
+
       #dpad .arrow > svg:not(.arrow-outline) {
         position: relative;
         z-index: 1;
@@ -274,26 +294,37 @@
       #dpad .up {
         grid-area: 1 / 2;
         top: calc(0% - var(--spread, 0%));
-        clip-path: polygon(30% 0, 70% 0, 100% 100%, 0 100%);
+        width: 100%;
+        height: 100%;
+        place-self: center;
       }
       #dpad .right {
         grid-area: 2 / 3;
         left: var(--spread, 0%);
-        clip-path: polygon(0 0, 100% 30%, 100% 70%, 0 100%);
+        width: 100%;
+        height: 100%;
+        place-self: center;
       }
       #dpad .down {
         grid-area: 3 / 2;
         top: var(--spread, 0%);
-        clip-path: polygon(0 0, 100% 0, 70% 100%, 30% 100%);
+        width: 100%;
+        height: 100%;
+        place-self: center;
       }
       #dpad .left {
         grid-area: 2 / 1;
         left: calc(0% - var(--spread, 0%));
-        clip-path: polygon(0 30%, 100% 0, 100% 100%, 0 70%);
+        width: 100%;
+        height: 100%;
+        place-self: center;
       }
 
       #dpad .hub {
-        display: none;
+        grid-area: 2 / 2;
+        border: 3px solid var(--line);
+        background: transparent;
+        pointer-events: none;
       }
 
       #dpad.dir-up .arrow.up,
@@ -302,6 +333,7 @@
       #dpad.dir-right .arrow.right {
         --arrow-fill: rgba(212, 227, 243, 0.45);
         color: #fff;
+        transform: scale(1.5);
       }
 
       /* --------------------------------------------------------------- analog sticks */
@@ -410,6 +442,7 @@
       }
 
       .face.pressed {
+        transform: scale(1.5);
         background: rgba(190, 190, 190, 0.22);
         color: #fff;
       }
@@ -810,7 +843,7 @@
             points="18,2 98,2 98,38 2,38"
             fill="none"
             stroke="var(--line)"
-            stroke-width="2"
+            stroke-width="3"
             stroke-linejoin="round"
           />
         </svg>
@@ -822,7 +855,7 @@
             points="2,2 82,2 98,38 2,38"
             fill="none"
             stroke="var(--line)"
-            stroke-width="2"
+            stroke-width="3"
             stroke-linejoin="round"
           />
         </svg>
@@ -832,7 +865,7 @@
       <div id="dpad" data-group="dpad" aria-label="D-pad">
         <span class="arrow up"
           ><svg class="arrow-outline" viewBox="0 0 100 100" aria-hidden="true">
-            <polygon points="30,3 70,3 97,97 3,97" /></svg
+            <rect x="3" y="3" width="94" height="94" /></svg
           ><svg
             viewBox="0 0 24 24"
             fill="none"
@@ -845,7 +878,7 @@
         ></span>
         <span class="arrow right"
           ><svg class="arrow-outline" viewBox="0 0 100 100" aria-hidden="true">
-            <polygon points="3,3 97,30 97,70 3,97" /></svg
+            <rect x="3" y="3" width="94" height="94" /></svg
           ><svg
             viewBox="0 0 24 24"
             fill="none"
@@ -858,7 +891,7 @@
         ></span>
         <span class="arrow down"
           ><svg class="arrow-outline" viewBox="0 0 100 100" aria-hidden="true">
-            <polygon points="3,3 97,3 70,97 30,97" /></svg
+            <rect x="3" y="3" width="94" height="94" /></svg
           ><svg
             viewBox="0 0 24 24"
             fill="none"
@@ -871,7 +904,7 @@
         ></span>
         <span class="arrow left"
           ><svg class="arrow-outline" viewBox="0 0 100 100" aria-hidden="true">
-            <polygon points="3,30 97,3 97,97 3,70" /></svg
+            <rect x="3" y="3" width="94" height="94" /></svg
           ><svg
             viewBox="0 0 24 24"
             fill="none"
@@ -1048,7 +1081,7 @@
             data-size="l"
             type="range"
             min="50"
-            max="180"
+            max="250"
             step="1"
             value="100"
           />
@@ -1060,7 +1093,7 @@
             data-size="r"
             type="range"
             min="50"
-            max="180"
+            max="250"
             step="1"
             value="100"
           />
@@ -1569,6 +1602,9 @@
         const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
         const num = (v, fallback) =>
           typeof v === "number" && Number.isFinite(v) ? v : fallback;
+        const MIN_GROUP_SPREAD = -30;
+        const MAX_GROUP_SPREAD = 28;
+        const maxGroupScale = (key) => (key === "l" || key === "r" ? 2.5 : 2.2);
 
         function freshLayout() {
           const groups = {};
@@ -1589,8 +1625,12 @@
               out.groups[key] = {
                 dx: clamp(num(src.dx, 0), -4000, 4000),
                 dy: clamp(num(src.dy, 0), -4000, 4000),
-                s: clamp(num(src.s, 1), 0.3, 2.2),
-                spread: clamp(num(src.spread, 0), -12, 28),
+                s: clamp(num(src.s, 1), 0.3, maxGroupScale(key)),
+                spread: clamp(
+                  num(src.spread, 0),
+                  MIN_GROUP_SPREAD,
+                  MAX_GROUP_SPREAD,
+                ),
               };
             }
           } catch {}
@@ -1654,6 +1694,7 @@
             if (out) out.textContent = pct(g.s);
           }
           const sel = layout.groups[selected];
+          editSize.max = Math.round(maxGroupScale(selected) * 100);
           editSize.value = Math.round(sel.s * 100);
           editSizeVal.textContent = pct(sel.s);
         }
@@ -1729,7 +1770,11 @@
         for (const input of sizeSliders) {
           input.addEventListener("input", () => {
             const key = input.dataset.size;
-            layout.groups[key].s = clamp(+input.value / 100, 0.3, 2.2);
+            layout.groups[key].s = clamp(
+              +input.value / 100,
+              0.3,
+              maxGroupScale(key),
+            );
             applyGroup(key);
             syncInputs();
             saveLayout();
@@ -1737,7 +1782,11 @@
         }
 
         editSize.addEventListener("input", () => {
-          layout.groups[selected].s = clamp(+editSize.value / 100, 0.3, 2.2);
+          layout.groups[selected].s = clamp(
+            +editSize.value / 100,
+            0.3,
+            maxGroupScale(selected),
+          );
           applyGroup(selected);
           syncInputs();
           saveLayout();
@@ -1830,14 +1879,14 @@
                 layout.groups[key].spread = clamp(
                   pinchSpread +
                     ((distance - pinchDistance) / (pinchWidth * 2)) * 100,
-                  -12,
-                  28,
+                  MIN_GROUP_SPREAD,
+                  MAX_GROUP_SPREAD,
                 );
               } else {
                 layout.groups[key].s = clamp(
                   pinchScale * (distance / pinchDistance),
                   0.3,
-                  2.2,
+                  maxGroupScale(key),
                 );
               }
               applyGroup(key);
