@@ -1,10 +1,4 @@
-#!/usr/bin/env bash
-#
-# Start the phone gamepad server.
-#
-#   ./start.sh             start the server only
-#   ./start.sh --launch    start the server and launch PPSSPP
-#   ./start.sh --dry-run   test without a virtual gamepad (no sudo needed)
+
 
 set -euo pipefail
 cd "$(dirname "$0")"

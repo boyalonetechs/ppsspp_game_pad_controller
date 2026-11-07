@@ -32,9 +32,7 @@ from websockets.asyncio.server import serve
 from websockets.http11 import Headers, Response
 
 
-# ---------------------------------------------------------------------------
 # Linux uinput (no external Python packages required)
-# ---------------------------------------------------------------------------
 
 UINPUT_MAX_NAME_SIZE = 80
 
@@ -92,9 +90,6 @@ ABS_RZ = 0x05
 ABS_HAT0X = 0x10
 ABS_HAT0Y = 0x11
 
-# Standard HID gamepad button codes.  The dense order matters: SDL turns these
-# into joystick button indexes 0..10, which the Xbox 360 mapping in SDL's
-# controller database expects.
 BTN_A = 0x130
 BTN_B = 0x131
 BTN_X = 0x133
@@ -135,13 +130,8 @@ _ABS_SPECS = [
 
 class VirtualPad:
     """A uinput Xbox 360-compatible gamepad."""
-
-    # The vendor/product/version triple matches this entry in PPSSPP's
-    # assets/gamecontrollerdb.txt:
-    #   030000005e0400008e02000004010000,Microsoft X-Box 360 pad,...
-    # so SDL understands the pad without any manual mapping.
-    VENDOR = 0x045E       # Microsoft
-    PRODUCT = 0x028E      # Xbox 360 pad
+    VENDOR = 0x045E       
+    PRODUCT = 0x028E      
     VERSION = 0x0104
     NAME = b"Microsoft X-Box 360 pad"
 
@@ -193,18 +183,14 @@ class VirtualPad:
             raise
 
         self.fd = fd
-        # Give udev a moment to tag the new event device (this is what lets the
-        # PPSSPP snap see it through its `joystick` interface).
         time.sleep(0.4)
 
-        # Explicit neutral state.
         for code in (ABS_X, ABS_Y, ABS_RX, ABS_RY, ABS_Z, ABS_RZ):
             self._emit(EV_ABS, code, 0)
         self._emit(EV_ABS, ABS_HAT0X, 0)
         self._emit(EV_ABS, ABS_HAT0Y, 0)
         self._syn()
 
-    # -- raw events --------------------------------------------------------
     def _emit(self, type_: int, code: int, value: int) -> None:
         if self.fd is None:
             return
@@ -213,7 +199,6 @@ class VirtualPad:
     def _syn(self) -> None:
         self._emit(EV_SYN, SYN_REPORT, 0)
 
-    # -- public API --------------------------------------------------------
     def set_button(self, name: str, down: bool) -> None:
         code = BUTTON_CODES.get(name)
         if code is None:
@@ -295,21 +280,14 @@ class VirtualPad:
         self.fd = None
 
 
-# ---------------------------------------------------------------------------
-# PPSSPP controls.ini fix-ups
-# ---------------------------------------------------------------------------
-
-# PPSSPP's SDL input maps shoulder buttons to NKCODE_BUTTON_6/_5 (193/192),
-# while its saved default mapping uses 194/195.  Fix L/R so they work.
 PAD_FIX = {
     "L": ("10-193", "1-45"),
     "R": ("10-192", "1-51"),
 }
-# Extra pad buttons exposed by the web UI.
 HOTKEY_FIX = {
-    "Pause": "10-4",            # Guide -> NKCODE_BACK
-    "Fast-forward": "10-106",   # L3 -> NKCODE_BUTTON_THUMBL
-    "Rewind": "10-107",         # R3 -> NKCODE_BUTTON_THUMBR
+    "Pause": "10-4",            
+    "Fast-forward": "10-106",   
+    "Rewind": "10-107",         
 }
 
 
@@ -362,7 +340,6 @@ def _patch_controls_text(text: str) -> tuple[str, bool]:
             continue
         out.append(line)
 
-    # Add any missing hotkey lines just before the next section / at the end.
     missing = [k for k in HOTKEY_FIX if k not in seen]
     if missing:
         if section == "ControlMapping":
@@ -410,10 +387,6 @@ def ppsspp_running() -> bool:
             return True
     return False
 
-
-# ---------------------------------------------------------------------------
-# HTTP + WebSocket server
-# ---------------------------------------------------------------------------
 
 HERE = Path(__file__).resolve().parent
 INDEX_HTML = HERE / "index.html"

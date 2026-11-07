@@ -1,1446 +1,1913 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#07090c">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>PSP Pad</title>
-<style>
-  :root {
-    --sal: env(safe-area-inset-left, 0px);
-    --sar: env(safe-area-inset-right, 0px);
-    --sat: env(safe-area-inset-top, 0px);
-    --sab: env(safe-area-inset-bottom, 0px);
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#07090c" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <title>PSP Pad</title>
+    <style>
+      :root {
+        --sal: env(safe-area-inset-left, 0px);
+        --sar: env(safe-area-inset-right, 0px);
+        --sat: env(safe-area-inset-top, 0px);
+        --sab: env(safe-area-inset-bottom, 0px);
 
-    --ink: #e9eef7;
-    --muted: rgba(233, 238, 247, .40);
-    --line: rgba(255, 255, 255, .13);
-    --glass: rgba(255, 255, 255, .045);
-    --glass-hi: rgba(255, 255, 255, .09);
+        /* Etched silver controls on a black glass-like surface */
+        --ink: #b8b8b8;
+        --muted: rgba(184, 184, 184, 0.48);
+        --line: rgba(190, 190, 190, 0.64);
+        --line-glow: rgba(190, 190, 190, 0.24);
 
-    --tri: #7ee0b8;
-    --cir: #ff9098;
-    --cro: #8ab8ff;
-    --squ: #f3a8e0;
+        --tri: #b8b8b8;
+        --cir: #b8b8b8;
+        --cro: #b8b8b8;
+        --squ: #b8b8b8;
 
-    --dpad: clamp(96px, 31vmin, 190px);
-    --stick: clamp(100px, 32vmin, 200px);
-    --face: clamp(168px, 40vmin, 250px);
-    --shoulder-w: clamp(88px, 18vmin, 150px);
-    --shoulder-h: clamp(42px, 9vmin, 62px);
-  }
+        --dpad: clamp(110px, 38vmin, 180px);
+        --stick: clamp(90px, 25vmin, 155px);
+        --face: clamp(160px, 50vmin, 225px);
+        --shoulder-w: clamp(92px, 13vw, 180px);
+        --shoulder-h: clamp(29.7px, 7.92vmin, 55.44px);
+      }
 
-  * { box-sizing: border-box; }
+      * {
+        box-sizing: border-box;
+      }
 
-  html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    overflow: hidden;
-    background: #07090c;
-    color: var(--ink);
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    -webkit-user-select: none;
-    user-select: none;
-    -webkit-touch-callout: none;
-    -webkit-tap-highlight-color: transparent;
-    overscroll-behavior: none;
-    touch-action: none;
-  }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+        color: var(--ink);
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          sans-serif;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
+        overscroll-behavior: none;
+        touch-action: none;
+      }
 
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background:
-      radial-gradient(1200px 620px at 50% -12%, rgba(58, 86, 120, .38), transparent 62%),
-      radial-gradient(900px 500px at 50% 118%, rgba(38, 61, 86, .20), transparent 65%),
-      radial-gradient(rgba(255, 255, 255, .032) 1px, transparent 0);
-    background-size: auto, auto, 22px 22px;
-    z-index: 0;
-  }
+      /* Keep the controls as the only visual focus. */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background: #000;
+        z-index: 0;
+      }
 
-  button {
-    font: inherit;
-    color: inherit;
-    border: 0;
-    background: none;
-    padding: 0;
-    margin: 0;
-    appearance: none;
-    -webkit-appearance: none;
-  }
+      button {
+        font: inherit;
+        color: inherit;
+        border: 0;
+        background: none;
+        padding: 0;
+        margin: 0;
+        appearance: none;
+        -webkit-appearance: none;
+      }
 
-  #app {
-    position: fixed;
-    inset: 0;
-    z-index: 1;
-  }
+      #app {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+      }
 
-  /* ---------------------------------------------------------------- top */
+      /* ---------------------------------------------------------------- top bar */
 
-  #topbar {
-    position: absolute;
-    top: calc(var(--sat) + 10px);
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    z-index: 6;
-  }
+      #topbar {
+        position: absolute;
+        top: auto;
+        bottom: calc(var(--sab) + 8px);
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        opacity: 0.55;
+        z-index: 6;
+      }
 
-  #status {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    height: 34px;
-    padding: 0 14px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
-    background: rgba(9, 12, 16, .62);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    font-size: clamp(9px, 1.7vmin, 12px);
-    font-weight: 600;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-    color: var(--muted);
-    white-space: nowrap;
-  }
+      #status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        height: 30px;
+        padding: 0 12px;
+        border-radius: 2px;
+        border: 1px solid var(--line);
+        background: rgba(0, 0, 0, 0.55);
+        font-size: clamp(8px, 1.4vmin, 10px);
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink);
+      }
 
-  #status .dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: #6b7280;
-    transition: background .25s, box-shadow .25s;
-  }
-  #status.ok .dot { background: #46d585; box-shadow: 0 0 10px #46d585; animation: breathe 2.4s ease-in-out infinite; }
-  #status.bad .dot { background: #ff6b6b; box-shadow: 0 0 8px rgba(255, 107, 107, .7); }
-  #status.ok { color: rgba(233, 238, 247, .72); }
+      #status .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--line);
+      }
+      #status.ok .dot {
+        background: #46d585;
+        box-shadow: 0 0 6px #46d585;
+      }
+      #status.bad .dot {
+        background: #ff6b6b;
+      }
 
-  @keyframes breathe {
-    0%, 100% { opacity: 1; }
-    50% { opacity: .45; }
-  }
+      #fsBtn,
+      #settingsBtn {
+        width: 30px;
+        height: 30px;
+        border-radius: 2px;
+        border: 3px solid var(--line);
+        background: rgba(4, 7, 10, 0.4);
+        display: grid;
+        place-items: center;
+        color: var(--ink);
+      }
+      #fsBtn:active,
+      #settingsBtn:active {
+        background: rgba(212, 227, 243, 0.25);
+      }
+      #fsBtn svg,
+      #settingsBtn svg {
+        width: 14px;
+        height: 14px;
+      }
 
-  #fsBtn, #settingsBtn {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    border: 1px solid var(--line);
-    background: rgba(9, 12, 16, .62);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    display: grid;
-    place-items: center;
-    color: rgba(233, 238, 247, .65);
-    transition: transform .12s, color .12s, background .12s;
-  }
-  #fsBtn:active, #settingsBtn:active { transform: scale(.9); color: #fff; background: rgba(255, 255, 255, .12); }
-  #fsBtn svg, #settingsBtn svg { width: 16px; height: 16px; }
+      /* ----------------------------------------------------------- shoulder triggers */
 
-  /* ----------------------------------------------------------- shoulders */
+      .shoulder {
+        position: absolute;
+        top: calc(var(--sat) + 12px);
+        transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(var(--s, 1));
+        transform-origin: center;
+        width: var(--shoulder-w);
+        height: var(--shoulder-h);
+        border: 0;
+        background: transparent;
+        display: grid;
+        place-items: center;
+        font-size: clamp(14px, 2.6vmin, 20px);
+        font-weight: 800;
+        color: var(--ink);
+        -webkit-text-stroke: 0.75px currentColor;
+        z-index: 5;
+        padding: 0 clamp(10px, 1.8vw, 22px);
+        transition:
+          background 0.08s,
+          color 0.08s;
+        isolation: isolate;
+        --shoulder-fill: transparent;
+        background: var(--shoulder-fill);
+      }
 
-  .shoulder {
-    position: absolute;
-    top: calc(var(--sat) + 10px);
-    width: var(--shoulder-w);
-    height: var(--shoulder-h);
-    border-radius: clamp(12px, 2.4vmin, 20px);
-    border: 1px solid var(--line);
-    background: linear-gradient(180deg, rgba(255, 255, 255, .085), rgba(255, 255, 255, .025));
-    box-shadow: 0 12px 30px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .12);
-    display: grid;
-    place-items: center;
-    font-size: clamp(13px, 2.8vmin, 20px);
-    font-weight: 700;
-    letter-spacing: .18em;
-    text-indent: .18em;
-    color: rgba(233, 238, 247, .62);
-    z-index: 5;
-    transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(calc(var(--s, 1) * var(--press, 1)));
-    transform-origin: top center;
-    transition: transform .09s ease-out, background .1s, color .1s;
-  }
-  .shoulder.l { left: calc(var(--sal) + 14px); }
-  .shoulder.r { right: calc(var(--sar) + 14px); }
-  .shoulder.dragging { transition: none; }
-  .shoulder.pressed { --press: 1.08; background: linear-gradient(180deg, rgba(138, 184, 255, .34), rgba(138, 184, 255, .10)); color: #fff; }
-  .shoulder.long { --press: 1.17; }
+      .shoulder-outline {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
 
-  /* ---------------------------------------------------------------- dpad */
+      .shoulder-outline polygon {
+        stroke-width: 3px;
+      }
 
-  #dpad {
-    position: absolute;
-    left: calc(var(--sal) + 2vmin);
-    top: 50%;
-    transform: translate(var(--dx, 0px), calc(-50% + var(--dy, 0px))) scale(var(--s, 1));
-    width: var(--dpad);
-    height: var(--dpad);
-    border-radius: 26%;
-    border: 1px solid var(--line);
-    background:
-      radial-gradient(circle at 50% 40%, rgba(255, 255, 255, .055), rgba(255, 255, 255, .015) 70%),
-      rgba(10, 13, 17, .35);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .07);
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
-    z-index: 4;
-  }
+      /* Custom polygon cutouts for L & R top shoulders */
+      .shoulder.l {
+        left: calc(var(--sal) + 18px);
+        border-radius: 6px 0 0 0;
+        clip-path: polygon(18% 0, 100% 0, 100% 100%, 0 100%);
+      }
 
-  #dpad .arrow {
-    display: grid;
-    place-items: center;
-    font-size: clamp(13px, 3.2vmin, 24px);
-    line-height: 1;
-    color: rgba(233, 238, 247, .30);
-    border-radius: 28%;
-    transition: color .08s, background .08s, text-shadow .08s, transform .09s;
-    pointer-events: none;
-  }
-  #dpad .arrow svg { width: 62%; height: 62%; }
-  #dpad .up    { grid-area: 1 / 2; }
-  #dpad .right { grid-area: 2 / 3; }
-  #dpad .down  { grid-area: 3 / 2; }
-  #dpad .left  { grid-area: 2 / 1; }
-  #dpad .hub {
-    grid-area: 2 / 2;
-    align-self: center;
-    justify-self: center;
-    width: 58%;
-    height: 58%;
-    border-radius: 34%;
-    border: 1px solid rgba(255, 255, 255, .10);
-    background: rgba(255, 255, 255, .045);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .10);
-    pointer-events: none;
-  }
+      .shoulder.r {
+        right: calc(var(--sar) + 18px);
+        border-radius: 0 6px 0 0;
+        clip-path: polygon(0 0, 82% 0, 100% 100%, 0 100%);
+      }
 
-  #dpad.dir-up .arrow.up,
-  #dpad.dir-down .arrow.down,
-  #dpad.dir-left .arrow.left,
-  #dpad.dir-right .arrow.right {
-    color: #fff;
-    background: rgba(138, 184, 255, .20);
-    text-shadow: 0 0 14px rgba(138, 184, 255, .95);
-    transform: scale(1.22);
-  }
+      .shoulder.pressed {
+        --shoulder-fill: rgba(212, 227, 243, 0.35);
+        color: #fff;
+      }
 
-  /* --------------------------------------------------------------- stick */
+      /* ---------------------------------------------------------------- dpad */
 
-  #stickBase {
-    position: absolute;
-    left: calc(var(--sal) + 2vmin + var(--dpad) + 2vmin);
-    top: 50%;
-    transform: translate(var(--dx, 0px), calc(-50% + var(--dy, 0px))) scale(var(--s, 1));
-    width: var(--stick);
-    height: var(--stick);
-    border-radius: 50%;
-    border: 1px solid var(--line);
-    background:
-      radial-gradient(circle at 50% 42%, rgba(255, 255, 255, .06), rgba(255, 255, 255, .012) 62%),
-      rgba(9, 12, 16, .42);
-    box-shadow: 0 20px 44px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .08);
-    display: grid;
-    place-items: center;
-    z-index: 4;
-  }
+      #dpad {
+        position: absolute;
+        left: calc(var(--sal) + 24vw);
+        bottom: var(--sab);
+        transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(var(--s, 1));
+        width: var(--dpad);
+        height: var(--dpad);
+        background: transparent;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+        z-index: 4;
+      }
 
-  #stickBase::before {
-    content: "";
-    position: absolute;
-    inset: 11%;
-    border-radius: 50%;
-    border: 1px dashed rgba(255, 255, 255, .09);
-    pointer-events: none;
-  }
+      #dpad .arrow {
+        position: relative;
+        isolation: isolate;
+        display: grid;
+        place-items: center;
+        color: var(--ink);
+        border: 0;
+        background: var(--arrow-fill);
+        pointer-events: none;
+        transition:
+          background 0.08s,
+          color 0.08s;
+        --arrow-fill: transparent;
+      }
 
-  #stickKnob {
-    width: 48%;
-    height: 48%;
-    border-radius: 50%;
-    background: radial-gradient(circle at 36% 30%, #77849a 0%, #3a4351 42%, #232a34 72%, #171c23 100%);
-    border: 1px solid rgba(255, 255, 255, .17);
-    box-shadow:
-      0 10px 22px rgba(0, 0, 0, .55),
-      inset 0 2px 4px rgba(255, 255, 255, .16),
-      inset 0 -6px 12px rgba(0, 0, 0, .42);
-    pointer-events: none;
-    will-change: transform;
-  }
-  #stickKnob.snap { transition: transform .16s cubic-bezier(.2, .8, .3, 1.2); }
+      #dpad .arrow-outline {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        overflow: visible;
+      }
 
-  .stick-label {
-    position: absolute;
-    left: 50%;
-    bottom: -1.7em;
-    transform: translateX(-50%);
-    font-size: clamp(8px, 1.5vmin, 11px);
-    letter-spacing: .28em;
-    text-indent: .28em;
-    color: rgba(233, 238, 247, .22);
-    pointer-events: none;
-    white-space: nowrap;
-  }
+      #dpad .arrow-outline polygon {
+        fill: none;
+        stroke: var(--line);
+        stroke-width: 3;
+        stroke-linejoin: round;
+        vector-effect: non-scaling-stroke;
+      }
 
-  /* ---------------------------------------------------------------- face */
+      #dpad .arrow > svg:not(.arrow-outline) {
+        position: relative;
+        z-index: 1;
+        width: 50%;
+        height: 50%;
+        stroke-width: 3;
+      }
 
-  #face {
-    position: absolute;
-    right: calc(var(--sar) + 2vmin);
-    top: 50%;
-    transform: translate(var(--dx, 0px), calc(-50% + var(--dy, 0px))) scale(var(--s, 1));
-    width: var(--face);
-    height: var(--face);
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
-    z-index: 4;
-  }
+      /* Distinct arrow cap shapes with pointed outer notches */
+      #dpad .up {
+        grid-area: 1 / 2;
+        top: calc(0% - var(--spread, 0%));
+        clip-path: polygon(30% 0, 70% 0, 100% 100%, 0 100%);
+      }
+      #dpad .right {
+        grid-area: 2 / 3;
+        left: var(--spread, 0%);
+        clip-path: polygon(0 0, 100% 30%, 100% 70%, 0 100%);
+      }
+      #dpad .down {
+        grid-area: 3 / 2;
+        top: var(--spread, 0%);
+        clip-path: polygon(0 0, 100% 0, 70% 100%, 30% 100%);
+      }
+      #dpad .left {
+        grid-area: 2 / 1;
+        left: calc(0% - var(--spread, 0%));
+        clip-path: polygon(0 30%, 100% 0, 100% 100%, 0 70%);
+      }
 
-  .face {
-    width: 92%;
-    height: 92%;
-    place-self: center;
-    border-radius: 50%;
-    border: 1px solid var(--line);
-    background: radial-gradient(circle at 35% 28%, rgba(255, 255, 255, .16), rgba(255, 255, 255, .028) 58%, rgba(0, 0, 0, .22));
-    box-shadow: 0 12px 28px rgba(0, 0, 0, .40), inset 0 1px 0 rgba(255, 255, 255, .14);
-    display: grid;
-    place-items: center;
-    line-height: 1;
-    transition: transform .09s, filter .09s, background .09s;
-  }
-  .face svg {
-    width: 54%;
-    height: 54%;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2.1;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    pointer-events: none;
-  }
-  .face.triangle { grid-area: 1 / 2; color: var(--tri); }
-  .face.circle   { grid-area: 2 / 3; color: var(--cir); }
-  .face.cross    { grid-area: 3 / 2; color: var(--cro); }
-  .face.square   { grid-area: 2 / 1; color: var(--squ); }
+      #dpad .hub {
+        display: none;
+      }
 
-  .face.pressed { transform: scale(1.10); filter: brightness(1.55); }
-  .face.long { transform: scale(1.18); filter: brightness(1.7); }
+      #dpad.dir-up .arrow.up,
+      #dpad.dir-down .arrow.down,
+      #dpad.dir-left .arrow.left,
+      #dpad.dir-right .arrow.right {
+        --arrow-fill: rgba(212, 227, 243, 0.45);
+        color: #fff;
+      }
 
-  /* ------------------------------------------------------- center / small */
+      /* --------------------------------------------------------------- analog sticks */
 
-  #center {
-    position: absolute;
-    left: 50%;
-    bottom: calc(var(--sab) + 2vmin);
-    transform: translate(calc(-50% + var(--dx, 0px)), var(--dy, 0px)) scale(var(--s, 1));
-    transform-origin: center bottom;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: clamp(8px, 1.8vmin, 14px);
-    z-index: 4;
-  }
+      #stickBase {
+        position: absolute;
+        left: calc(var(--sal) + 6.5vw);
+        bottom: calc(var(--sab) + 21.5vh);
+        transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(var(--s, 1));
+        width: var(--stick);
+        height: var(--stick);
+        border-radius: 50%;
+        border: 3px solid var(--line);
+        background: rgba(4, 7, 10, 0.15);
+        display: grid;
+        place-items: center;
+        z-index: 4;
+      }
 
-  .hotkeys { display: flex; gap: clamp(6px, 1.4vmin, 12px); }
+      /* Dual outer ring effect */
+      #stickBase::before {
+        content: "";
+        position: absolute;
+        inset: 5px;
+        border-radius: 50%;
+        border: 1.5px solid var(--line);
+        pointer-events: none;
+      }
 
-  .hot {
-    height: clamp(26px, 5.2vmin, 38px);
-    padding: 0 clamp(9px, 1.9vmin, 16px);
-    border-radius: 999px;
-    border: 1px solid var(--line);
-    background: var(--glass);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
-    font-size: clamp(8px, 1.55vmin, 11px);
-    font-weight: 700;
-    letter-spacing: .10em;
-    color: rgba(233, 238, 247, .46);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: .45em;
-    transition: transform .09s, background .09s, color .09s;
-  }
-  .hot svg { width: 1.35em; height: 1.35em; flex: none; }
-  .hot.pressed { transform: scale(1.10); background: rgba(138, 184, 255, .22); color: #fff; }
-  .hot.long { transform: scale(1.18); }
+      /* Textured stipple thumbstick knob cap */
+      #stickKnob {
+        width: 72%;
+        height: 72%;
+        border-radius: 50%;
+        border: 1.8px solid var(--line);
+        background-color: rgba(4, 7, 10, 0.35);
+        background-image: radial-gradient(
+          rgba(190, 190, 190, 0.55) 1px,
+          transparent 0
+        );
+        background-size: 4px 4px;
+        pointer-events: none;
+        will-change: transform;
+      }
 
-  .startsel { display: flex; align-items: center; gap: clamp(14px, 3.2vmin, 30px); }
+      .stick-label {
+        display: none;
+      }
 
-  .small {
-    height: clamp(30px, 6vmin, 44px);
-    padding: 0 clamp(15px, 3vmin, 26px);
-    border-radius: 999px;
-    border: 1px solid var(--line);
-    background: linear-gradient(180deg, rgba(255, 255, 255, .075), rgba(255, 255, 255, .02));
-    box-shadow: 0 10px 24px rgba(0, 0, 0, .32), inset 0 1px 0 rgba(255, 255, 255, .10);
-    font-size: clamp(8px, 1.5vmin, 11px);
-    font-weight: 700;
-    letter-spacing: .16em;
-    text-indent: .16em;
-    color: rgba(233, 238, 247, .52);
-    transition: transform .09s, background .09s, color .09s;
-  }
-  .small.pressed { transform: scale(1.08); background: rgba(255, 255, 255, .14); color: #fff; }
-  .small.long { transform: scale(1.16); background: rgba(255, 255, 255, .18); }
+      /* ---------------------------------------------------------------- face buttons */
 
-  /* ---------------------------------------------------- settings / editor */
+      #face {
+        position: absolute;
+        right: calc(var(--sar) + 5.5vw);
+        bottom: calc(var(--sab) + 18vh);
+        transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(var(--s, 1));
+        width: var(--face);
+        height: var(--face);
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+        z-index: 4;
+      }
 
-  #settings {
-    position: fixed;
-    inset: 0;
-    z-index: 40;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: calc(var(--sat) + 14px) 14px calc(var(--sab) + 14px);
-    background: rgba(4, 6, 9, .58);
-    backdrop-filter: blur(7px);
-    -webkit-backdrop-filter: blur(7px);
-  }
-  #settings.open { display: flex; }
+      .face {
+        position: relative;
+        width: 90%;
+        height: 90%;
+        place-self: center;
+        border-radius: 50%;
+        border: 3px solid var(--line);
+        background: rgba(4, 7, 10, 0.15);
+        box-shadow: none;
+        display: grid;
+        place-items: center;
+        line-height: 1;
+        color: var(--ink);
+        transition:
+          background 0.08s,
+          color 0.08s;
+      }
 
-  .sheet {
-    width: min(470px, 94vw);
-    max-height: 92vh;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    touch-action: pan-y;
-    -webkit-overflow-scrolling: touch;
-    padding: 18px 18px 16px;
-    border-radius: 22px;
-    border: 1px solid var(--line);
-    background:
-      radial-gradient(400px 180px at 50% -10%, rgba(58, 86, 120, .32), transparent 70%),
-      rgba(12, 16, 21, .94);
-    box-shadow: 0 28px 80px rgba(0, 0, 0, .62), inset 0 1px 0 rgba(255, 255, 255, .07);
-  }
+      .face svg {
+        width: 68%;
+        height: 68%;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 3;
+      }
 
-  .sheet-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 4px;
-  }
-  .sheet-head h2 {
-    margin: 0;
-    font-size: 17px;
-    font-weight: 700;
-    letter-spacing: .01em;
-  }
-  .sheet-head .x {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: 1px solid var(--line);
-    background: var(--glass);
-    display: grid;
-    place-items: center;
-    color: rgba(233, 238, 247, .6);
-    transition: transform .12s, background .12s, color .12s;
-  }
-  .sheet-head .x:active { transform: scale(.9); background: rgba(255, 255, 255, .12); color: #fff; }
-  .sheet-head .x svg { width: 15px; height: 15px; }
+      .face.triangle {
+        grid-area: 1 / 2;
+        top: calc(0% - var(--spread, 0%));
+      }
+      .face.circle {
+        grid-area: 2 / 3;
+        left: var(--spread, 0%);
+      }
+      .face.cross {
+        grid-area: 3 / 2;
+        top: var(--spread, 0%);
+      }
+      .face.square {
+        grid-area: 2 / 1;
+        left: calc(0% - var(--spread, 0%));
+      }
 
-  .sheet .hint {
-    margin: 6px 0 14px;
-    font-size: 12px;
-    line-height: 1.5;
-    color: rgba(233, 238, 247, .45);
-  }
+      .face.pressed {
+        background: rgba(190, 190, 190, 0.22);
+        color: #fff;
+      }
 
-  .sizer {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    gap: 3px 12px;
-    margin: 10px 0;
-    font-size: 12.5px;
-    font-weight: 600;
-    color: rgba(233, 238, 247, .72);
-  }
-  .sizer output {
-    font-variant-numeric: tabular-nums;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--muted);
-  }
-  .sizer input[type="range"] {
-    grid-column: 1 / -1;
-    width: 100%;
-    height: 24px;
-    margin: 0;
-    accent-color: #8ab8ff;
-  }
+      /* ------------------------------------------------------- center top action bar */
 
-  .sheet-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 16px;
-  }
-  .btn {
-    flex: 1;
-    height: 40px;
-    padding: 0 14px;
-    border-radius: 12px;
-    border: 1px solid var(--line);
-    background: var(--glass);
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: .06em;
-    color: rgba(233, 238, 247, .72);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: .4em;
-    transition: transform .1s, background .1s, color .1s;
-  }
-  .btn:active { transform: scale(.96); background: rgba(255, 255, 255, .11); color: #fff; }
-  .btn.primary {
-    border-color: rgba(138, 184, 255, .45);
-    background: rgba(138, 184, 255, .18);
-    color: #fff;
-  }
-  .btn svg { width: 15px; height: 15px; }
+      #center {
+        position: absolute;
+        left: 50%;
+        top: calc(var(--sat) + 8px);
+        transform: translate(calc(-50% + var(--dx, 0px)), var(--dy, 0px))
+          scale(var(--s, 1));
+        transform-origin: center top;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: clamp(8px, 1.8vmin, 16px);
+        z-index: 4;
+      }
 
-  #editbar {
-    position: absolute;
-    top: calc(var(--sat) + 8px);
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 30;
-    display: none;
-    flex-direction: column;
-    gap: 7px;
-    width: min(560px, 62vw);
-    padding: 9px 11px;
-    border-radius: 16px;
-    border: 1px solid var(--line);
-    background: rgba(9, 12, 16, .90);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    box-shadow: 0 16px 44px rgba(0, 0, 0, .5);
-  }
-  body.editing #editbar { display: flex; }
-  body.editing #topbar { visibility: hidden; pointer-events: none; }
-  body.editing [data-group] { outline: 1px dashed rgba(138, 184, 255, .42); outline-offset: 5px; cursor: move; }
-  body.editing [data-group].selected {
-    outline: 2px solid rgba(138, 184, 255, .95);
-    box-shadow: 0 0 0 7px rgba(138, 184, 255, .10);
-  }
-  body.editing [data-group].dragging { filter: brightness(1.16); }
+      .hotkeys {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
 
-  .edit-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-  .edit-hint {
-    font-size: 10px;
-    color: var(--muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
-  }
-  .edit-row .spacer { flex: 1; }
-  .edit-title {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    color: rgba(233, 238, 247, .55);
-    margin-right: 2px;
-    white-space: nowrap;
-  }
+      /* Top menu button rendering as the Playstation Home icon frame */
+      .hot {
+        height: clamp(26px, 4.8vmin, 34px);
+        padding: 0 clamp(8px, 1.6vmin, 12px);
+        border-radius: 2px;
+        border: 3px solid var(--line);
+        background: rgba(4, 7, 10, 0.2);
+        font-size: clamp(8px, 1.4vmin, 10px);
+        font-weight: 700;
+        color: var(--ink);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35em;
+      }
 
-  #editbar .size-row {
-    gap: 10px;
-    flex-wrap: nowrap;
-  }
-  #editbar .size-row .edit-title { min-width: 46px; }
-  #editbar input[type="range"] {
-    flex: 1;
-    min-width: 60px;
-    height: 22px;
-    margin: 0;
-    accent-color: #8ab8ff;
-  }
-  #editSizeVal {
-    font-size: 11px;
-    font-variant-numeric: tabular-nums;
-    color: var(--muted);
-    min-width: 38px;
-    text-align: right;
-  }
-  #editbar .btn { flex: 0 0 auto; height: 30px; padding: 0 12px; border-radius: 999px; font-size: 10px; }
+      .hot svg {
+        width: 1.1em;
+        height: 1.1em;
+      }
 
-  /* --------------------------------------------------------------- toast */
+      .hotkeys button[data-btn="l3"] {
+        order: 1;
+      }
+      .hotkeys button[data-btn="guide"] {
+        order: 2;
+      }
+      .hotkeys button[data-btn="r3"] {
+        order: 3;
+      }
+      .hotkeys button[data-btn="l3"],
+      .hotkeys button[data-btn="r3"] {
+        width: clamp(34px, 5.5vmin, 50px);
+        padding: 0;
+        font-size: 0;
+      }
+      .hotkeys button[data-btn="l3"] svg,
+      .hotkeys button[data-btn="r3"] svg {
+        width: 14px;
+        height: 14px;
+      }
 
-  #toast {
-    position: fixed;
-    left: 50%;
-    top: calc(var(--sat) + 58px);
-    transform: translate(-50%, -6px);
-    padding: 9px 16px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
-    background: rgba(9, 12, 16, .82);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    font-size: 12px;
-    color: rgba(233, 238, 247, .78);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity .2s, transform .2s;
-    z-index: 60;
-    white-space: nowrap;
-  }
-  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+      /* Style Menu button as top HOME triangle icon */
+      button[data-btn="guide"] {
+        border-radius: 50%;
+        width: clamp(28px, 5.2vmin, 36px);
+        height: clamp(28px, 5.2vmin, 36px);
+        padding: 0;
+        font-size: 0; /* Hide text label, render shape only */
+      }
+      button[data-btn="guide"]::before {
+        content: "△";
+        font-size: clamp(12px, 2.2vmin, 16px);
+        line-height: 1;
+        color: var(--ink);
+      }
+      button[data-btn="guide"] svg {
+        display: none;
+      }
 
-  /* ------------------------------------------------------- rotate screen */
+      .startsel {
+        display: flex;
+        align-items: center;
+        gap: clamp(6px, 1.4vmin, 12px);
+      }
 
-  #rotate {
-    position: fixed;
-    inset: 0;
-    z-index: 50;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-    text-align: center;
-    padding: 32px;
-    background:
-      radial-gradient(700px 480px at 50% 20%, rgba(58, 86, 120, .34), transparent 65%),
-      #07090c;
-  }
-  #rotate .phone {
-    width: 64px;
-    height: 108px;
-    border-radius: 14px;
-    border: 2px solid rgba(233, 238, 247, .38);
-    position: relative;
-    animation: tilt 2.4s ease-in-out infinite;
-  }
-  #rotate .phone::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    bottom: 8px;
-    width: 16px;
-    height: 3px;
-    border-radius: 3px;
-    background: rgba(233, 238, 247, .30);
-    transform: translateX(-50%);
-  }
-  #rotate h1 {
-    margin: 0;
-    font-size: 19px;
-    font-weight: 650;
-    letter-spacing: .02em;
-  }
-  #rotate p {
-    margin: 0;
-    max-width: 300px;
-    font-size: 13px;
-    line-height: 1.5;
-    color: rgba(233, 238, 247, .48);
-  }
-  @keyframes tilt {
-    0%, 18% { transform: rotate(0deg); }
-    45%, 100% { transform: rotate(90deg); }
-  }
+      /* Framed SELECT & START action pill buttons */
+      .small {
+        height: clamp(24px, 4.5vmin, 32px);
+        padding: 0 clamp(8px, 1.6vmin, 14px);
+        border-radius: 2px;
+        border: 3px solid var(--line);
+        background: rgba(4, 7, 10, 0.2);
+        font-size: clamp(8px, 1.4vmin, 10px);
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: var(--ink);
+        transition:
+          background 0.08s,
+          color 0.08s;
+      }
 
-  @media (orientation: portrait) {
-    #rotate { display: flex; }
-    #app { display: none; }
-  }
+      .small.pressed,
+      .hot.pressed {
+        background: rgba(190, 190, 190, 0.22);
+        color: #fff;
+      }
 
-  @media (prefers-reduced-motion: reduce) {
-    #status.ok .dot, #rotate .phone { animation: none; }
-  }
-</style>
-</head>
-<body>
+      /* ---------------------------------------------------- settings / editor modal */
 
-<div id="app">
-  <div id="topbar">
-    <div id="status"><span class="dot"></span><span id="statusText">connecting</span></div>
-    <button id="fsBtn" type="button" aria-label="Fullscreen">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>
-      </svg>
-    </button>
-    <button id="settingsBtn" type="button" aria-label="Settings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="3.1"/>
-        <path d="M19.1 14.6a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1.08z"/>
-      </svg>
-    </button>
-  </div>
+      #settings {
+        position: fixed;
+        inset: 0;
+        z-index: 40;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: calc(var(--sat) + 14px) 14px calc(var(--sab) + 14px);
+        background: rgba(2, 4, 7, 0.8);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
+      #settings.open {
+        display: flex;
+      }
 
-  <button class="shoulder l" type="button" data-group="l" data-btn="l">L</button>
-  <button class="shoulder r" type="button" data-group="r" data-btn="r">R</button>
+      .sheet {
+        width: min(470px, 94vw);
+        max-height: 92vh;
+        overflow-y: auto;
+        padding: 18px;
+        border-radius: 4px;
+        border: 1.8px solid var(--line);
+        background: rgba(6, 10, 16, 0.95);
+        color: var(--ink);
+      }
 
-  <div id="dpad" data-group="dpad" aria-label="D-pad">
-    <span class="arrow up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14.5 12 8l6 6.5"/></svg></span>
-    <span class="arrow right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6 16 12l-6.5 6"/></svg></span>
-    <span class="arrow down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.5 12 16l6-6.5"/></svg></span>
-    <span class="arrow left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6 8 12l6.5 6"/></svg></span>
-    <div class="hub"></div>
-  </div>
+      .sheet-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .sheet-head h2 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+      }
+      .sheet-head .x {
+        width: 28px;
+        height: 28px;
+        border-radius: 2px;
+        border: 3px solid var(--line);
+        background: transparent;
+        display: grid;
+        place-items: center;
+        color: var(--ink);
+      }
 
-  <div id="stickBase" data-group="stick" aria-label="Analog stick">
-    <div id="stickKnob"></div>
-    <div class="stick-label">ANALOG</div>
-  </div>
+      .sheet .hint {
+        margin: 8px 0 14px;
+        font-size: 11px;
+        color: var(--muted);
+      }
 
-  <div id="face" data-group="face">
-    <button class="face triangle" type="button" data-btn="triangle" aria-label="Triangle">
-      <svg viewBox="0 0 24 24"><path d="M12 4.8 20.2 19.2H3.8Z"/></svg>
-    </button>
-    <button class="face circle" type="button" data-btn="circle" aria-label="Circle">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.6"/></svg>
-    </button>
-    <button class="face cross" type="button" data-btn="cross" aria-label="Cross">
-      <svg viewBox="0 0 24 24"><path d="M6.6 6.6 17.4 17.4M17.4 6.6 6.6 17.4"/></svg>
-    </button>
-    <button class="face square" type="button" data-btn="square" aria-label="Square">
-      <svg viewBox="0 0 24 24"><rect x="5.3" y="5.3" width="13.4" height="13.4" rx="1.1"/></svg>
-    </button>
-  </div>
+      .sizer {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 4px 12px;
+        margin: 8px 0;
+        font-size: 12px;
+      }
+      .sizer output {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .sizer input[type="range"] {
+        grid-column: 1 / -1;
+        width: 100%;
+        accent-color: var(--ink);
+      }
 
-  <div id="center" data-group="center">
-    <div class="hotkeys">
-      <button class="hot" type="button" data-btn="guide">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="5.5" width="3.4" height="13" rx="1.2"/><rect x="13.6" y="5.5" width="3.4" height="13" rx="1.2"/></svg>MENU
+      .sheet-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+      }
+      .btn {
+        flex: 1;
+        height: 36px;
+        border-radius: 2px;
+        border: 3px solid var(--line);
+        background: transparent;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--ink);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4em;
+      }
+      .btn.primary {
+        background: rgba(212, 227, 243, 0.2);
+      }
+      .sheet-actions .btn svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      #editbar {
+        position: absolute;
+        top: calc(var(--sat) + 8px);
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 30;
+        display: none;
+        flex-direction: column;
+        gap: 6px;
+        width: min(560px, 62vw);
+        padding: 8px 12px;
+        border-radius: 4px;
+        border: 1.8px solid var(--line);
+        background: rgba(6, 10, 16, 0.95);
+      }
+      body.editing #editbar {
+        display: flex;
+      }
+      body.editing #topbar {
+        visibility: hidden;
+      }
+      body.editing [data-group] {
+        outline: 1.5px dashed var(--line);
+      }
+      body.editing [data-group].selected {
+        outline: 2px solid var(--ink);
+      }
+
+      .edit-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .edit-hint {
+        font-size: 10px;
+        color: var(--muted);
+      }
+      .edit-row .spacer {
+        flex: 1;
+      }
+      .edit-title {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--ink);
+      }
+      #editbar input[type="range"] {
+        flex: 1;
+        accent-color: var(--ink);
+      }
+      #editSizeVal {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      #editbar .btn {
+        height: 28px;
+        padding: 0 10px;
+        border-radius: 2px;
+        font-size: 10px;
+      }
+
+      /* --------------------------------------------------------------- toast */
+
+      #toast {
+        position: fixed;
+        left: 50%;
+        top: calc(var(--sat) + 58px);
+        transform: translate(-50%, -6px);
+        padding: 6px 14px;
+        border-radius: 2px;
+        border: 1.5px solid var(--line);
+        background: rgba(6, 10, 16, 0.9);
+        font-size: 11px;
+        color: var(--ink);
+        opacity: 0;
+        pointer-events: none;
+        transition:
+          opacity 0.2s,
+          transform 0.2s;
+        z-index: 60;
+      }
+      #toast.show {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+
+      /* ------------------------------------------------------- rotate prompt */
+
+      #rotate {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        text-align: center;
+        padding: 32px;
+        background: #04070a;
+      }
+      #rotate .phone {
+        width: 56px;
+        height: 96px;
+        border-radius: 8px;
+        border: 2px solid var(--line);
+        position: relative;
+        animation: tilt 2.4s ease-in-out infinite;
+      }
+      #rotate h1 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+      }
+      #rotate p {
+        margin: 0;
+        max-width: 280px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      @keyframes tilt {
+        0%,
+        18% {
+          transform: rotate(0deg);
+        }
+        45%,
+        100% {
+          transform: rotate(90deg);
+        }
+      }
+
+      @media (orientation: portrait) {
+        #rotate {
+          display: flex;
+        }
+        #app {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div id="topbar">
+        <div id="status">
+          <span class="dot"></span><span id="statusText">connecting</span>
+        </div>
+        <button id="fsBtn" type="button" aria-label="Fullscreen">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+          </svg>
+        </button>
+        <button id="settingsBtn" type="button" aria-label="Settings">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="3.1" />
+            <path
+              d="M19.1 14.6a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1.08z"
+            />
+          </svg>
+        </button>
+      </div>
+
+      <button class="shoulder l" type="button" data-group="l" data-btn="l">
+        <svg class="shoulder-outline" viewBox="0 0 100 40" aria-hidden="true">
+          <polygon
+            points="18,2 98,2 98,38 2,38"
+            fill="none"
+            stroke="var(--line)"
+            stroke-width="2"
+            stroke-linejoin="round"
+          />
+        </svg>
+        L
       </button>
-      <button class="hot" type="button" data-btn="l3">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.5 5.4v13.2L11.6 12 4.5 5.4Zm7 0v13.2L18.6 12 11.5 5.4Z"/></svg>FF
+      <button class="shoulder r" type="button" data-group="r" data-btn="r">
+        <svg class="shoulder-outline" viewBox="0 0 100 40" aria-hidden="true">
+          <polygon
+            points="2,2 82,2 98,38 2,38"
+            fill="none"
+            stroke="var(--line)"
+            stroke-width="2"
+            stroke-linejoin="round"
+          />
+        </svg>
+        R
       </button>
-      <button class="hot" type="button" data-btn="r3">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.5 5.4v13.2L12.4 12l7.1-6.6Zm-7 0v13.2L5.4 12l7.1-6.6Z"/></svg>REW
-      </button>
+
+      <div id="dpad" data-group="dpad" aria-label="D-pad">
+        <span class="arrow up"
+          ><svg class="arrow-outline" viewBox="0 0 100 100" aria-hidden="true">
+            <polygon points="30,3 70,3 97,97 3,97" /></svg
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M6 14.5 12 8l6 6.5" /></svg
+        ></span>
+        <span class="arrow right"
+          ><svg class="arrow-outline" viewBox="0 0 100 100" aria-hidden="true">
+            <polygon points="3,3 97,30 97,70 3,97" /></svg
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M9.5 6 16 12l-6.5 6" /></svg
+        ></span>
+        <span class="arrow down"
+          ><svg class="arrow-outline" viewBox="0 0 100 100" aria-hidden="true">
+            <polygon points="3,3 97,3 70,97 30,97" /></svg
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M6 9.5 12 16l6-6.5" /></svg
+        ></span>
+        <span class="arrow left"
+          ><svg class="arrow-outline" viewBox="0 0 100 100" aria-hidden="true">
+            <polygon points="3,30 97,3 97,97 3,70" /></svg
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M14.5 6 8 12l6.5 6" /></svg
+        ></span>
+        <div class="hub"></div>
+      </div>
+
+      <div id="stickBase" data-group="stick" aria-label="Analog stick">
+        <div id="stickKnob"></div>
+        <div class="stick-label">ANALOG</div>
+      </div>
+
+      <div id="face" data-group="face">
+        <button
+          class="face triangle"
+          type="button"
+          data-btn="triangle"
+          aria-label="Triangle"
+        >
+          <svg viewBox="0 0 24 24"><path d="M12 4.8 20.2 19.2H3.8Z" /></svg>
+        </button>
+        <button
+          class="face circle"
+          type="button"
+          data-btn="circle"
+          aria-label="Circle"
+        >
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.6" /></svg>
+        </button>
+        <button
+          class="face cross"
+          type="button"
+          data-btn="cross"
+          aria-label="Cross"
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M6.6 6.6 17.4 17.4M17.4 6.6 6.6 17.4" />
+          </svg>
+        </button>
+        <button
+          class="face square"
+          type="button"
+          data-btn="square"
+          aria-label="Square"
+        >
+          <svg viewBox="0 0 24 24">
+            <rect x="5.3" y="5.3" width="13.4" height="13.4" rx="1.1" />
+          </svg>
+        </button>
+      </div>
+
+      <div id="center" data-group="center">
+        <div class="hotkeys">
+          <button class="hot" type="button" data-btn="guide">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <rect x="7" y="5.5" width="3.4" height="13" rx="1.2" />
+              <rect x="13.6" y="5.5" width="3.4" height="13" rx="1.2" /></svg
+            >MENU
+          </button>
+          <button class="hot" type="button" data-btn="l3">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path
+                d="M4.5 5.4v13.2L11.6 12 4.5 5.4Zm7 0v13.2L18.6 12 11.5 5.4Z"
+              /></svg
+            >FF
+          </button>
+          <button class="hot" type="button" data-btn="r3">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path
+                d="M19.5 5.4v13.2L12.4 12l7.1-6.6Zm-7 0v13.2L5.4 12l7.1-6.6Z"
+              /></svg
+            >REW
+          </button>
+        </div>
+        <div class="startsel">
+          <button class="small" type="button" data-btn="select">SELECT</button>
+          <button class="small" type="button" data-btn="start">START</button>
+        </div>
+      </div>
     </div>
-    <div class="startsel">
-      <button class="small" type="button" data-btn="select">SELECT</button>
-      <button class="small" type="button" data-btn="start">START</button>
+
+    <div id="settings" aria-hidden="true">
+      <div
+        class="sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settingsTitle"
+      >
+        <div class="sheet-head">
+          <h2 id="settingsTitle">Controls</h2>
+          <button
+            class="x"
+            id="closeSettings"
+            type="button"
+            aria-label="Close settings"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+            >
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+        <p class="hint">
+          Set the size of each control here. In <strong>Edit layout</strong>,
+          tap a control to select it and drag to move it. Pinch the D-pad or
+          face buttons to change spacing; pinch other controls or use a slider
+          to resize. Settings are saved on this phone.
+        </p>
+
+        <label class="sizer">
+          <span>All controls</span>
+          <output id="out-all">100%</output>
+          <input
+            id="sizeAll"
+            type="range"
+            min="60"
+            max="160"
+            step="1"
+            value="100"
+          />
+        </label>
+
+        <label class="sizer">
+          <span>D-pad</span>
+          <output id="out-dpad">100%</output>
+          <input
+            data-size="dpad"
+            type="range"
+            min="50"
+            max="180"
+            step="1"
+            value="100"
+          />
+        </label>
+        <label class="sizer">
+          <span>Analog stick</span>
+          <output id="out-stick">100%</output>
+          <input
+            data-size="stick"
+            type="range"
+            min="50"
+            max="180"
+            step="1"
+            value="100"
+          />
+        </label>
+        <label class="sizer">
+          <span>Face buttons</span>
+          <output id="out-face">100%</output>
+          <input
+            data-size="face"
+            type="range"
+            min="50"
+            max="180"
+            step="1"
+            value="100"
+          />
+        </label>
+        <label class="sizer">
+          <span>L shoulder</span>
+          <output id="out-l">100%</output>
+          <input
+            data-size="l"
+            type="range"
+            min="50"
+            max="180"
+            step="1"
+            value="100"
+          />
+        </label>
+        <label class="sizer">
+          <span>R shoulder</span>
+          <output id="out-r">100%</output>
+          <input
+            data-size="r"
+            type="range"
+            min="50"
+            max="180"
+            step="1"
+            value="100"
+          />
+        </label>
+        <label class="sizer">
+          <span>Start / hotkeys</span>
+          <output id="out-center">100%</output>
+          <input
+            data-size="center"
+            type="range"
+            min="50"
+            max="180"
+            step="1"
+            value="100"
+          />
+        </label>
+
+        <div class="sheet-actions">
+          <button class="btn" id="resetLayout" type="button">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M4 4v6h6M20 20v-6h-6" />
+              <path
+                d="M5.5 15a7 7 0 0 0 11.7 2.2L20 14M4 10l2.8-3.2A7 7 0 0 1 18.5 9"
+              />
+            </svg>
+            Reset
+          </button>
+          <button class="btn primary" id="editLayout" type="button">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 20h9" />
+              <path d="m16.5 3.5 4 4L8 20l-5 1 1-5Z" />
+            </svg>
+            Edit layout
+          </button>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
 
-<div id="settings" aria-hidden="true">
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-    <div class="sheet-head">
-      <h2 id="settingsTitle">Controls</h2>
-      <button class="x" id="closeSettings" type="button" aria-label="Close settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
-      </button>
+    <div id="editbar" aria-hidden="true">
+      <div class="edit-row">
+        <span class="edit-title">Edit layout</span>
+        <span class="edit-hint"
+          >drag to move &middot; pinch to adjust spacing</span
+        >
+        <span class="spacer"></span>
+        <button class="btn" id="resetEdit" type="button">Reset</button>
+        <button class="btn primary" id="doneEdit" type="button">Done</button>
+      </div>
+      <div class="edit-row size-row">
+        <span class="edit-title" id="selName">D-pad</span>
+        <input
+          id="editSize"
+          type="range"
+          min="50"
+          max="180"
+          step="1"
+          value="100"
+          aria-label="Selected control size"
+        />
+        <span id="editSizeVal">100%</span>
+      </div>
     </div>
-    <p class="hint">Set the size of each control here. In <strong>Edit layout</strong>, tap a control to select it, drag to move it, and use the slider to resize it. Settings are saved on this phone.</p>
 
-    <label class="sizer">
-      <span>All controls</span>
-      <output id="out-all">100%</output>
-      <input id="sizeAll" type="range" min="60" max="160" step="1" value="100">
-    </label>
-
-    <label class="sizer">
-      <span>D-pad</span>
-      <output id="out-dpad">100%</output>
-      <input data-size="dpad" type="range" min="50" max="180" step="1" value="100">
-    </label>
-    <label class="sizer">
-      <span>Analog stick</span>
-      <output id="out-stick">100%</output>
-      <input data-size="stick" type="range" min="50" max="180" step="1" value="100">
-    </label>
-    <label class="sizer">
-      <span>Face buttons</span>
-      <output id="out-face">100%</output>
-      <input data-size="face" type="range" min="50" max="180" step="1" value="100">
-    </label>
-    <label class="sizer">
-      <span>L shoulder</span>
-      <output id="out-l">100%</output>
-      <input data-size="l" type="range" min="50" max="180" step="1" value="100">
-    </label>
-    <label class="sizer">
-      <span>R shoulder</span>
-      <output id="out-r">100%</output>
-      <input data-size="r" type="range" min="50" max="180" step="1" value="100">
-    </label>
-    <label class="sizer">
-      <span>Start / hotkeys</span>
-      <output id="out-center">100%</output>
-      <input data-size="center" type="range" min="50" max="180" step="1" value="100">
-    </label>
-
-    <div class="sheet-actions">
-      <button class="btn" id="resetLayout" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v6h6M20 20v-6h-6"/><path d="M5.5 15a7 7 0 0 0 11.7 2.2L20 14M4 10l2.8-3.2A7 7 0 0 1 18.5 9"/></svg>
-        Reset
-      </button>
-      <button class="btn primary" id="editLayout" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="m16.5 3.5 4 4L8 20l-5 1 1-5Z"/></svg>
-        Edit layout
-      </button>
+    <div id="rotate">
+      <div class="phone"></div>
+      <h1>Rotate your phone</h1>
+      <p>
+        PSP games need a landscape screen. Turn the phone sideways to use the
+        pad.
+      </p>
     </div>
-  </div>
-</div>
 
-<div id="editbar" aria-hidden="true">
-  <div class="edit-row">
-    <span class="edit-title">Edit layout</span>
-    <span class="edit-hint">tap a control &middot; drag to move</span>
-    <span class="spacer"></span>
-    <button class="btn" id="resetEdit" type="button">Reset</button>
-    <button class="btn primary" id="doneEdit" type="button">Done</button>
-  </div>
-  <div class="edit-row size-row">
-    <span class="edit-title" id="selName">D-pad</span>
-    <input id="editSize" type="range" min="50" max="180" step="1" value="100" aria-label="Selected control size">
-    <span id="editSizeVal">100%</span>
-  </div>
-</div>
+    <div id="toast"></div>
 
-<div id="rotate">
-  <div class="phone"></div>
-  <h1>Rotate your phone</h1>
-  <p>PSP games need a landscape screen. Turn the phone sideways to use the pad.</p>
-</div>
+    <script>
+      (() => {
+        "use strict";
 
-<div id="toast"></div>
+        const statusEl = document.getElementById("status");
+        const statusText = document.getElementById("statusText");
+        const toastEl = document.getElementById("toast");
 
-<script>
-(() => {
-  "use strict";
+        let ws = null;
+        let reconnectDelay = 600;
+        let pingTimer = null;
+        let latency = null;
 
-  const statusEl = document.getElementById("status");
-  const statusText = document.getElementById("statusText");
-  const toastEl = document.getElementById("toast");
+        const heldEls = new Set();
+        const heldButtons = new Map(); // name -> count
 
-  let ws = null;
-  let reconnectDelay = 600;
-  let pingTimer = null;
-  let latency = null;
+        const LONG_PRESS_MS = 340;
+        let editing = false;
 
-  const heldEls = new Set();
-  const heldButtons = new Map(); // name -> count
+        // ---------------------------------------------------------------- status
 
-  const LONG_PRESS_MS = 340;
-  let editing = false;
+        function setStatus(state, text) {
+          statusEl.classList.remove("ok", "bad");
+          if (state) statusEl.classList.add(state);
+          statusText.textContent = text;
+        }
 
-  // ---------------------------------------------------------------- status
+        function updateStatus() {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            setStatus(
+              "ok",
+              latency == null ? "connected" : `connected \u00b7 ${latency} ms`,
+            );
+          }
+        }
 
-  function setStatus(state, text) {
-    statusEl.classList.remove("ok", "bad");
-    if (state) statusEl.classList.add(state);
-    statusText.textContent = text;
-  }
+        let toastTimer = null;
+        function toast(text) {
+          toastEl.textContent = text;
+          toastEl.classList.add("show");
+          clearTimeout(toastTimer);
+          toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2200);
+        }
 
-  function updateStatus() {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      setStatus("ok", latency == null ? "connected" : `connected \u00b7 ${latency} ms`);
-    }
-  }
+        // ------------------------------------------------------------ websocket
 
-  let toastTimer = null;
-  function toast(text) {
-    toastEl.textContent = text;
-    toastEl.classList.add("show");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2200);
-  }
+        function send(obj) {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify(obj));
+          }
+        }
 
-  // ------------------------------------------------------------ websocket
+        function connect() {
+          const proto = location.protocol === "https:" ? "wss:" : "ws:";
+          setStatus("", "connecting");
+          ws = new WebSocket(`${proto}//${location.host}/ws`);
 
-  function send(obj) {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(obj));
-    }
-  }
+          ws.onopen = () => {
+            reconnectDelay = 600;
+            latency = null;
+            updateStatus();
+            startPing();
+          };
 
-  function connect() {
-    const proto = location.protocol === "https:" ? "wss:" : "ws:";
-    setStatus("", "connecting");
-    ws = new WebSocket(`${proto}//${location.host}/ws`);
+          ws.onmessage = (ev) => {
+            let msg;
+            try {
+              msg = JSON.parse(ev.data);
+            } catch {
+              return;
+            }
+            if (msg && msg.t === "pong" && typeof msg.ts === "number") {
+              latency = Math.max(0, Math.round(performance.now() - msg.ts));
+              updateStatus();
+            }
+          };
 
-    ws.onopen = () => {
-      reconnectDelay = 600;
-      latency = null;
-      updateStatus();
-      startPing();
-    };
+          ws.onclose = () => {
+            stopPing();
+            setStatus("bad", "offline \u00b7 retrying");
+            setTimeout(connect, reconnectDelay);
+            reconnectDelay = Math.min(reconnectDelay * 1.6, 4000);
+          };
 
-    ws.onmessage = (ev) => {
-      let msg;
-      try { msg = JSON.parse(ev.data); } catch { return; }
-      if (msg && msg.t === "pong" && typeof msg.ts === "number") {
-        latency = Math.max(0, Math.round(performance.now() - msg.ts));
-        updateStatus();
-      }
-    };
+          ws.onerror = () => {
+            try {
+              ws.close();
+            } catch {}
+          };
+        }
 
-    ws.onclose = () => {
-      stopPing();
-      setStatus("bad", "offline \u00b7 retrying");
-      setTimeout(connect, reconnectDelay);
-      reconnectDelay = Math.min(reconnectDelay * 1.6, 4000);
-    };
+        function startPing() {
+          stopPing();
+          const ping = () => send({ t: "ping", ts: performance.now() });
+          ping();
+          pingTimer = setInterval(ping, 3000);
+        }
 
-    ws.onerror = () => { try { ws.close(); } catch {} };
-  }
+        function stopPing() {
+          if (pingTimer) clearInterval(pingTimer);
+          pingTimer = null;
+        }
 
-  function startPing() {
-    stopPing();
-    const ping = () => send({ t: "ping", ts: performance.now() });
-    ping();
-    pingTimer = setInterval(ping, 3000);
-  }
+        // --------------------------------------------------------------- buttons
 
-  function stopPing() {
-    if (pingTimer) clearInterval(pingTimer);
-    pingTimer = null;
-  }
+        function buzz() {
+          try {
+            navigator.vibrate && navigator.vibrate(8);
+          } catch {}
+        }
 
-  // --------------------------------------------------------------- buttons
+        function press(name) {
+          const n = (heldButtons.get(name) || 0) + 1;
+          heldButtons.set(name, n);
+          if (n === 1) send({ t: "b", k: name, v: 1 });
+        }
 
-  function buzz() {
-    try { navigator.vibrate && navigator.vibrate(8); } catch {}
-  }
+        function unpress(name) {
+          const n = heldButtons.get(name) || 0;
+          if (n <= 0) return;
+          if (n === 1) {
+            heldButtons.delete(name);
+            send({ t: "b", k: name, v: 0 });
+          } else {
+            heldButtons.set(name, n - 1);
+          }
+        }
 
-  function press(name) {
-    const n = (heldButtons.get(name) || 0) + 1;
-    heldButtons.set(name, n);
-    if (n === 1) send({ t: "b", k: name, v: 1 });
-  }
+        function bindButton(el) {
+          const name = el.dataset.btn;
+          if (!name) return;
+          el._pointers = new Set();
 
-  function unpress(name) {
-    const n = heldButtons.get(name) || 0;
-    if (n <= 0) return;
-    if (n === 1) {
-      heldButtons.delete(name);
-      send({ t: "b", k: name, v: 0 });
-    } else {
-      heldButtons.set(name, n - 1);
-    }
-  }
+          el.addEventListener("pointerdown", (e) => {
+            if (editing) return;
+            e.preventDefault();
+            if (el._pointers.size === 0) {
+              el.classList.add("pressed");
+              clearTimeout(el._longTimer);
+              el._longTimer = setTimeout(
+                () => el.classList.add("long"),
+                LONG_PRESS_MS,
+              );
+              heldEls.add(el);
+              press(name);
+              buzz();
+            }
+            el._pointers.add(e.pointerId);
+            try {
+              el.setPointerCapture(e.pointerId);
+            } catch {}
+          });
 
-  function bindButton(el) {
-    const name = el.dataset.btn;
-    if (!name) return;
-    el._pointers = new Set();
+          const release = (e) => {
+            if (!el._pointers.has(e.pointerId)) return;
+            el._pointers.delete(e.pointerId);
+            if (el._pointers.size === 0) {
+              clearTimeout(el._longTimer);
+              el.classList.remove("pressed", "long");
+              heldEls.delete(el);
+              unpress(name);
+            }
+          };
 
-    el.addEventListener("pointerdown", (e) => {
-      if (editing) return;
-      e.preventDefault();
-      if (el._pointers.size === 0) {
-        el.classList.add("pressed");
-        clearTimeout(el._longTimer);
-        el._longTimer = setTimeout(() => el.classList.add("long"), LONG_PRESS_MS);
-        heldEls.add(el);
-        press(name);
-        buzz();
-      }
-      el._pointers.add(e.pointerId);
-      try { el.setPointerCapture(e.pointerId); } catch {}
-    });
+          el.addEventListener("pointerup", release);
+          el.addEventListener("pointercancel", release);
+          el.addEventListener("lostpointercapture", release);
+          el.addEventListener("contextmenu", (e) => e.preventDefault());
+        }
 
-    const release = (e) => {
-      if (!el._pointers.has(e.pointerId)) return;
-      el._pointers.delete(e.pointerId);
-      if (el._pointers.size === 0) {
-        clearTimeout(el._longTimer);
-        el.classList.remove("pressed", "long");
-        heldEls.delete(el);
-        unpress(name);
-      }
-    };
+        document.querySelectorAll("[data-btn]").forEach(bindButton);
 
-    el.addEventListener("pointerup", release);
-    el.addEventListener("pointercancel", release);
-    el.addEventListener("lostpointercapture", release);
-    el.addEventListener("contextmenu", (e) => e.preventDefault());
-  }
+        // ------------------------------------------------------------------ dpad
 
-  document.querySelectorAll("[data-btn]").forEach(bindButton);
+        const dpad = document.getElementById("dpad");
+        let dpadPointer = null;
+        const hat = { x: 0, y: 0 };
 
-  // ------------------------------------------------------------------ dpad
+        function setHat(x, y) {
+          if (x === hat.x && y === hat.y) return;
+          hat.x = x;
+          hat.y = y;
+          dpad.classList.remove("dir-up", "dir-down", "dir-left", "dir-right");
+          if (y < 0) dpad.classList.add("dir-up");
+          if (y > 0) dpad.classList.add("dir-down");
+          if (x < 0) dpad.classList.add("dir-left");
+          if (x > 0) dpad.classList.add("dir-right");
+          send({ t: "hat", x, y });
+        }
 
-  const dpad = document.getElementById("dpad");
-  let dpadPointer = null;
-  const hat = { x: 0, y: 0 };
+        function dpadFromEvent(e) {
+          const r = dpad.getBoundingClientRect();
+          const dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
+          const dy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
+          const ax = Math.abs(dx);
+          const ay = Math.abs(dy);
+          let x = 0;
+          let y = 0;
+          if (ax > 0.34) x = Math.sign(dx);
+          if (ay > 0.34) y = Math.sign(dy);
+          if (x === 0 && y === 0 && (ax > 0.16 || ay > 0.16)) {
+            if (ax > ay) x = Math.sign(dx);
+            else y = Math.sign(dy);
+          }
+          return { x, y };
+        }
 
-  function setHat(x, y) {
-    if (x === hat.x && y === hat.y) return;
-    hat.x = x;
-    hat.y = y;
-    dpad.classList.remove("dir-up", "dir-down", "dir-left", "dir-right");
-    if (y < 0) dpad.classList.add("dir-up");
-    if (y > 0) dpad.classList.add("dir-down");
-    if (x < 0) dpad.classList.add("dir-left");
-    if (x > 0) dpad.classList.add("dir-right");
-    send({ t: "hat", x, y });
-  }
+        dpad.addEventListener("pointerdown", (e) => {
+          if (editing) return;
+          e.preventDefault();
+          if (dpadPointer !== null) return;
+          dpadPointer = e.pointerId;
+          try {
+            dpad.setPointerCapture(e.pointerId);
+          } catch {}
+          const d = dpadFromEvent(e);
+          setHat(d.x, d.y);
+        });
 
-  function dpadFromEvent(e) {
-    const r = dpad.getBoundingClientRect();
-    const dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
-    const dy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
-    const ax = Math.abs(dx);
-    const ay = Math.abs(dy);
-    let x = 0;
-    let y = 0;
-    if (ax > 0.34) x = Math.sign(dx);
-    if (ay > 0.34) y = Math.sign(dy);
-    if (x === 0 && y === 0 && (ax > 0.16 || ay > 0.16)) {
-      if (ax > ay) x = Math.sign(dx);
-      else y = Math.sign(dy);
-    }
-    return { x, y };
-  }
+        dpad.addEventListener("pointermove", (e) => {
+          if (editing) return;
+          if (e.pointerId !== dpadPointer) return;
+          const d = dpadFromEvent(e);
+          setHat(d.x, d.y);
+        });
 
-  dpad.addEventListener("pointerdown", (e) => {
-    if (editing) return;
-    e.preventDefault();
-    if (dpadPointer !== null) return;
-    dpadPointer = e.pointerId;
-    try { dpad.setPointerCapture(e.pointerId); } catch {}
-    const d = dpadFromEvent(e);
-    setHat(d.x, d.y);
-  });
-
-  dpad.addEventListener("pointermove", (e) => {
-    if (editing) return;
-    if (e.pointerId !== dpadPointer) return;
-    const d = dpadFromEvent(e);
-    setHat(d.x, d.y);
-  });
-
-  const endDpad = (e) => {
-    if (e.pointerId !== dpadPointer) return;
-    dpadPointer = null;
-    setHat(0, 0);
-  };
-  dpad.addEventListener("pointerup", endDpad);
-  dpad.addEventListener("pointercancel", endDpad);
-  dpad.addEventListener("lostpointercapture", endDpad);
-
-  // ----------------------------------------------------------------- stick
-
-  const stickBase = document.getElementById("stickBase");
-  const stickKnob = document.getElementById("stickKnob");
-  let stickPointer = null;
-  let axisPending = null;
-  let axisRaf = 0;
-
-  function queueAxis(x, y) {
-    axisPending = { x, y };
-    if (!axisRaf) axisRaf = requestAnimationFrame(flushAxis);
-  }
-
-  function flushAxis() {
-    axisRaf = 0;
-    if (axisPending) {
-      send({ t: "ax", x: +axisPending.x.toFixed(3), y: +axisPending.y.toFixed(3) });
-      axisPending = null;
-    }
-  }
-
-  function moveStick(e) {
-    const r = stickBase.getBoundingClientRect();
-    const cx = r.left + r.width / 2;
-    const cy = r.top + r.height / 2;
-    const max = r.width * 0.35;
-    // The whole stick can be scaled up by the layout editor.  The knob lives
-    // inside that scaled element, so divide its translation to keep it under
-    // the finger.
-    const visualScale = stickBase.offsetWidth ? r.width / stickBase.offsetWidth : 1;
-    let dx = e.clientX - cx;
-    let dy = e.clientY - cy;
-    const len = Math.hypot(dx, dy);
-    if (len > max) {
-      dx = (dx / len) * max;
-      dy = (dy / len) * max;
-    }
-    stickKnob.style.transform =
-      `translate(${(dx / visualScale).toFixed(1)}px, ${(dy / visualScale).toFixed(1)}px)`;
-
-    const nx = dx / max;
-    const ny = dy / max;
-    const mag = Math.min(1, Math.hypot(nx, ny));
-    const dead = 0.13;
-    let ox = 0;
-    let oy = 0;
-    if (mag > dead) {
-      const scale = (mag - dead) / (1 - dead) / mag;
-      ox = nx * scale;
-      oy = ny * scale;
-    }
-    queueAxis(ox, oy);
-  }
-
-  stickBase.addEventListener("pointerdown", (e) => {
-    if (editing) return;
-    e.preventDefault();
-    if (stickPointer !== null) return;
-    stickPointer = e.pointerId;
-    try { stickBase.setPointerCapture(e.pointerId); } catch {}
-    stickKnob.classList.remove("snap");
-    moveStick(e);
-  });
-
-  stickBase.addEventListener("pointermove", (e) => {
-    if (editing) return;
-    if (e.pointerId !== stickPointer) return;
-    moveStick(e);
-  });
-
-  const endStick = (e) => {
-    if (e.pointerId !== stickPointer) return;
-    stickPointer = null;
-    stickKnob.classList.add("snap");
-    stickKnob.style.transform = "translate(0px, 0px)";
-    queueAxis(0, 0);
-  };
-  stickBase.addEventListener("pointerup", endStick);
-  stickBase.addEventListener("pointercancel", endStick);
-  stickBase.addEventListener("lostpointercapture", endStick);
-
-  // ----------------------------------------------------------- release all
-
-  function releaseAll() {
-    for (const el of heldEls) {
-      el.classList.remove("pressed", "long");
-      clearTimeout(el._longTimer);
-      if (el._pointers) el._pointers.clear();
-      const name = el.dataset.btn;
-      if (name) {
-        heldButtons.delete(name);
-        send({ t: "b", k: name, v: 0 });
-      }
-    }
-    heldEls.clear();
-    heldButtons.clear();
-
-    if (dpadPointer !== null) {
-      dpadPointer = null;
-      setHat(0, 0);
-    }
-    if (stickPointer !== null) {
-      stickPointer = null;
-      stickKnob.classList.add("snap");
-      stickKnob.style.transform = "translate(0px, 0px)";
-      queueAxis(0, 0);
-    }
-  }
-
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden) releaseAll();
-    else keepAwake();
-  });
-  window.addEventListener("blur", releaseAll);
-  window.addEventListener("pagehide", releaseAll);
-
-  // ------------------------------------------------------------ fullscreen
-
-  const fsBtn = document.getElementById("fsBtn");
-
-  async function goFullscreen() {
-    try {
-      if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen({ navigationUI: "hide" });
-      }
-    } catch {
-      toast("Fullscreen not available in this browser");
-    }
-    try {
-      if (screen.orientation && screen.orientation.lock) {
-        await screen.orientation.lock("landscape");
-      }
-    } catch {}
-  }
-
-  fsBtn.addEventListener("click", goFullscreen);
-
-  // -------------------------------------------------------------- wake lock
-
-  let wakeLock = null;
-  async function keepAwake() {
-    try {
-      if (navigator.wakeLock && !wakeLock) {
-        wakeLock = await navigator.wakeLock.request("screen");
-        wakeLock.addEventListener("release", () => { wakeLock = null; });
-      }
-    } catch {}
-  }
-  document.addEventListener("pointerdown", keepAwake, { once: true });
-
-  // -------------------------------------------------------- layout & sizing
-
-  const GROUPS = ["dpad", "stick", "face", "l", "r", "center"];
-  const GROUP_LABEL = {
-    dpad: "D-pad",
-    stick: "Analog",
-    face: "Face buttons",
-    l: "L shoulder",
-    r: "R shoulder",
-    center: "Start / hotkeys",
-  };
-  const LAYOUT_KEY = "pspPadLayout.v1";
-  const groupEls = {
-    dpad,
-    stick: stickBase,
-    face: document.getElementById("face"),
-    l: document.querySelector(".shoulder.l"),
-    r: document.querySelector(".shoulder.r"),
-    center: document.getElementById("center"),
-  };
-
-  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-  const num = (v, fallback) => (typeof v === "number" && Number.isFinite(v) ? v : fallback);
-
-  function freshLayout() {
-    const groups = {};
-    for (const key of GROUPS) groups[key] = { dx: 0, dy: 0, s: 1 };
-    return { all: 1, groups };
-  }
-
-  function loadLayout() {
-    const out = freshLayout();
-    try {
-      const raw = JSON.parse(localStorage.getItem(LAYOUT_KEY) || "null");
-      if (!raw || typeof raw !== "object") return out;
-      out.all = clamp(num(raw.all, 1), 0.5, 2);
-      for (const key of GROUPS) {
-        const src = raw.groups && raw.groups[key];
-        if (!src) continue;
-        out.groups[key] = {
-          dx: clamp(num(src.dx, 0), -4000, 4000),
-          dy: clamp(num(src.dy, 0), -4000, 4000),
-          s: clamp(num(src.s, 1), 0.3, 2.2),
+        const endDpad = (e) => {
+          if (e.pointerId !== dpadPointer) return;
+          dpadPointer = null;
+          setHat(0, 0);
         };
-      }
-    } catch {}
-    return out;
-  }
+        dpad.addEventListener("pointerup", endDpad);
+        dpad.addEventListener("pointercancel", endDpad);
+        dpad.addEventListener("lostpointercapture", endDpad);
 
-  let layout = loadLayout();
-  let selected = "dpad";
+        // ----------------------------------------------------------------- stick
 
-  function applyGroup(key) {
-    const el = groupEls[key];
-    if (!el) return;
-    const g = layout.groups[key];
-    el.style.setProperty("--dx", `${g.dx.toFixed(1)}px`);
-    el.style.setProperty("--dy", `${g.dy.toFixed(1)}px`);
-    el.style.setProperty("--s", clamp(g.s * layout.all, 0.25, 3).toFixed(3));
-  }
+        const stickBase = document.getElementById("stickBase");
+        const stickKnob = document.getElementById("stickKnob");
+        let stickPointer = null;
+        let axisPending = null;
+        let axisRaf = 0;
 
-  function applyLayout() {
-    for (const key of GROUPS) applyGroup(key);
-  }
+        function queueAxis(x, y) {
+          axisPending = { x, y };
+          if (!axisRaf) axisRaf = requestAnimationFrame(flushAxis);
+        }
 
-  function saveLayout() {
-    try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout)); } catch {}
-  }
+        function flushAxis() {
+          axisRaf = 0;
+          if (axisPending) {
+            send({
+              t: "ax",
+              x: +axisPending.x.toFixed(3),
+              y: +axisPending.y.toFixed(3),
+            });
+            axisPending = null;
+          }
+        }
 
-  const settingsEl = document.getElementById("settings");
-  const settingsBtn = document.getElementById("settingsBtn");
-  const closeSettingsBtn = document.getElementById("closeSettings");
-  const editLayoutBtn = document.getElementById("editLayout");
-  const resetLayoutBtn = document.getElementById("resetLayout");
-  const sizeAll = document.getElementById("sizeAll");
-  const sizeSliders = Array.from(document.querySelectorAll("[data-size]"));
-  const editbar = document.getElementById("editbar");
-  const editSize = document.getElementById("editSize");
-  const editSizeVal = document.getElementById("editSizeVal");
-  const selName = document.getElementById("selName");
-  const resetEditBtn = document.getElementById("resetEdit");
-  const doneEditBtn = document.getElementById("doneEdit");
+        function moveStick(e) {
+          const r = stickBase.getBoundingClientRect();
+          const cx = r.left + r.width / 2;
+          const cy = r.top + r.height / 2;
+          const max = r.width * 0.35;
+          // The whole stick can be scaled up by the layout editor.  The knob lives
+          // inside that scaled element, so divide its translation to keep it under
+          // the finger.
+          const visualScale = stickBase.offsetWidth
+            ? r.width / stickBase.offsetWidth
+            : 1;
+          let dx = e.clientX - cx;
+          let dy = e.clientY - cy;
+          const len = Math.hypot(dx, dy);
+          if (len > max) {
+            dx = (dx / len) * max;
+            dy = (dy / len) * max;
+          }
+          stickKnob.style.transform = `translate(${(dx / visualScale).toFixed(1)}px, ${(dy / visualScale).toFixed(1)}px)`;
 
-  function pct(value) {
-    return `${Math.round(value * 100)}%`;
-  }
+          const nx = dx / max;
+          const ny = dy / max;
+          const mag = Math.min(1, Math.hypot(nx, ny));
+          const dead = 0.13;
+          let ox = 0;
+          let oy = 0;
+          if (mag > dead) {
+            const scale = (mag - dead) / (1 - dead) / mag;
+            ox = nx * scale;
+            oy = ny * scale;
+          }
+          queueAxis(ox, oy);
+        }
 
-  function syncInputs() {
-    sizeAll.value = Math.round(layout.all * 100);
-    document.getElementById("out-all").textContent = pct(layout.all);
-    for (const input of sizeSliders) {
-      const key = input.dataset.size;
-      const g = layout.groups[key];
-      input.value = Math.round(g.s * 100);
-      const out = document.getElementById(`out-${key}`);
-      if (out) out.textContent = pct(g.s);
-    }
-    const sel = layout.groups[selected];
-    editSize.value = Math.round(sel.s * 100);
-    editSizeVal.textContent = pct(sel.s);
-  }
+        stickBase.addEventListener("pointerdown", (e) => {
+          if (editing) return;
+          e.preventDefault();
+          if (stickPointer !== null) return;
+          stickPointer = e.pointerId;
+          try {
+            stickBase.setPointerCapture(e.pointerId);
+          } catch {}
+          stickKnob.classList.remove("snap");
+          moveStick(e);
+        });
 
-  function selectGroup(key) {
-    selected = key;
-    for (const g of GROUPS) groupEls[g].classList.toggle("selected", g === key);
-    selName.textContent = GROUP_LABEL[key];
-    syncInputs();
-  }
+        stickBase.addEventListener("pointermove", (e) => {
+          if (editing) return;
+          if (e.pointerId !== stickPointer) return;
+          moveStick(e);
+        });
 
-  function openSettings() {
-    releaseAll();
-    if (editing) return;
-    settingsEl.classList.add("open");
-    settingsEl.setAttribute("aria-hidden", "false");
-    syncInputs();
-  }
+        const endStick = (e) => {
+          if (e.pointerId !== stickPointer) return;
+          stickPointer = null;
+          stickKnob.classList.add("snap");
+          stickKnob.style.transform = "translate(0px, 0px)";
+          queueAxis(0, 0);
+        };
+        stickBase.addEventListener("pointerup", endStick);
+        stickBase.addEventListener("pointercancel", endStick);
+        stickBase.addEventListener("lostpointercapture", endStick);
 
-  function closeSettings() {
-    settingsEl.classList.remove("open");
-    settingsEl.setAttribute("aria-hidden", "true");
-    saveLayout();
-  }
+        // ----------------------------------------------------------- release all
 
-  function startEditing() {
-    releaseAll();
-    settingsEl.classList.remove("open");
-    settingsEl.setAttribute("aria-hidden", "true");
-    editing = true;
-    document.body.classList.add("editing");
-    editbar.setAttribute("aria-hidden", "false");
-    selectGroup(selected);
-    toast("Drag a control to move it \u00b7 slider to resize");
-  }
+        function releaseAll() {
+          for (const el of heldEls) {
+            el.classList.remove("pressed", "long");
+            clearTimeout(el._longTimer);
+            if (el._pointers) el._pointers.clear();
+            const name = el.dataset.btn;
+            if (name) {
+              heldButtons.delete(name);
+              send({ t: "b", k: name, v: 0 });
+            }
+          }
+          heldEls.clear();
+          heldButtons.clear();
 
-  function stopEditing() {
-    editing = false;
-    document.body.classList.remove("editing");
-    editbar.setAttribute("aria-hidden", "true");
-    for (const key of GROUPS) groupEls[key].classList.remove("selected", "dragging");
-    saveLayout();
-    toast("Layout saved");
-  }
+          if (dpadPointer !== null) {
+            dpadPointer = null;
+            setHat(0, 0);
+          }
+          if (stickPointer !== null) {
+            stickPointer = null;
+            stickKnob.classList.add("snap");
+            stickKnob.style.transform = "translate(0px, 0px)";
+            queueAxis(0, 0);
+          }
+        }
 
-  function resetLayout() {
-    layout = freshLayout();
-    applyLayout();
-    syncInputs();
-    saveLayout();
-    toast("Layout reset");
-  }
+        document.addEventListener("visibilitychange", () => {
+          if (document.hidden) releaseAll();
+          else keepAwake();
+        });
+        window.addEventListener("blur", releaseAll);
+        window.addEventListener("pagehide", releaseAll);
 
-  settingsBtn.addEventListener("click", openSettings);
-  closeSettingsBtn.addEventListener("click", closeSettings);
-  settingsEl.addEventListener("click", (e) => {
-    if (e.target === settingsEl) closeSettings();
-  });
-  editLayoutBtn.addEventListener("click", startEditing);
-  resetLayoutBtn.addEventListener("click", resetLayout);
-  doneEditBtn.addEventListener("click", stopEditing);
-  resetEditBtn.addEventListener("click", resetLayout);
+        // ------------------------------------------------------------ fullscreen
 
-  sizeAll.addEventListener("input", () => {
-    layout.all = clamp(+sizeAll.value / 100, 0.5, 2);
-    applyLayout();
-    syncInputs();
-    saveLayout();
-  });
+        const fsBtn = document.getElementById("fsBtn");
 
-  for (const input of sizeSliders) {
-    input.addEventListener("input", () => {
-      const key = input.dataset.size;
-      layout.groups[key].s = clamp(+input.value / 100, 0.3, 2.2);
-      applyGroup(key);
-      syncInputs();
-      saveLayout();
-    });
-  }
+        async function goFullscreen() {
+          try {
+            if (!document.fullscreenElement) {
+              await document.documentElement.requestFullscreen({
+                navigationUI: "hide",
+              });
+            }
+          } catch {
+            toast("Fullscreen not available in this browser");
+          }
+          try {
+            if (screen.orientation && screen.orientation.lock) {
+              await screen.orientation.lock("landscape");
+            }
+          } catch {}
+        }
 
-  editSize.addEventListener("input", () => {
-    layout.groups[selected].s = clamp(+editSize.value / 100, 0.3, 2.2);
-    applyGroup(selected);
-    syncInputs();
-    saveLayout();
-  });
+        fsBtn.addEventListener("click", goFullscreen);
 
-  function bindDrag(key) {
-    const el = groupEls[key];
-    if (!el) return;
-    let pid = null;
-    let sx = 0;
-    let sy = 0;
-    let ox = 0;
-    let oy = 0;
-    let startRect = null;
+        // -------------------------------------------------------------- wake lock
 
-    el.addEventListener("pointerdown", (e) => {
-      if (!editing) return;
-      e.preventDefault();
-      e.stopPropagation();
-      if (pid !== null) return;
-      pid = e.pointerId;
-      selectGroup(key);
-      const g = layout.groups[key];
-      ox = g.dx;
-      oy = g.dy;
-      sx = e.clientX;
-      sy = e.clientY;
-      startRect = el.getBoundingClientRect();
-      el.classList.add("dragging");
-      try { el.setPointerCapture(pid); } catch {}
-    }, true);
+        let wakeLock = null;
+        async function keepAwake() {
+          try {
+            if (navigator.wakeLock && !wakeLock) {
+              wakeLock = await navigator.wakeLock.request("screen");
+              wakeLock.addEventListener("release", () => {
+                wakeLock = null;
+              });
+            }
+          } catch {}
+        }
+        document.addEventListener("pointerdown", keepAwake, { once: true });
 
-    el.addEventListener("pointermove", (e) => {
-      if (!editing || pid === null || e.pointerId !== pid) return;
-      e.preventDefault();
-      const g = layout.groups[key];
-      const rect = startRect;
-      const cx0 = rect.left + rect.width / 2;
-      const cy0 = rect.top + rect.height / 2;
-      const margin = 26;
-      const cx = clamp(cx0 + (e.clientX - sx), margin, window.innerWidth - margin);
-      const cy = clamp(cy0 + (e.clientY - sy), margin, window.innerHeight - margin);
-      g.dx = ox + (cx - cx0);
-      g.dy = oy + (cy - cy0);
-      applyGroup(key);
-    });
+        // -------------------------------------------------------- layout & sizing
 
-    const end = (e) => {
-      if (pid === null || e.pointerId !== pid) return;
-      pid = null;
-      startRect = null;
-      el.classList.remove("dragging");
-      saveLayout();
-    };
-    el.addEventListener("pointerup", end);
-    el.addEventListener("pointercancel", end);
-    el.addEventListener("lostpointercapture", end);
-  }
+        const GROUPS = ["dpad", "stick", "face", "l", "r", "center"];
+        const GROUP_LABEL = {
+          dpad: "D-pad",
+          stick: "Analog",
+          face: "Face buttons",
+          l: "L shoulder",
+          r: "R shoulder",
+          center: "Start / hotkeys",
+        };
+        const LAYOUT_KEY = "pspPadLayout.v1";
+        const groupEls = {
+          dpad,
+          stick: stickBase,
+          face: document.getElementById("face"),
+          l: document.querySelector(".shoulder.l"),
+          r: document.querySelector(".shoulder.r"),
+          center: document.getElementById("center"),
+        };
 
-  for (const key of GROUPS) bindDrag(key);
+        const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+        const num = (v, fallback) =>
+          typeof v === "number" && Number.isFinite(v) ? v : fallback;
 
-  applyLayout();
-  selectGroup("dpad");
+        function freshLayout() {
+          const groups = {};
+          for (const key of GROUPS)
+            groups[key] = { dx: 0, dy: 0, s: 1, spread: 0 };
+          return { all: 1, groups };
+        }
 
-  // ------------------------------------------------------------- misc init
+        function loadLayout() {
+          const out = freshLayout();
+          try {
+            const raw = JSON.parse(localStorage.getItem(LAYOUT_KEY) || "null");
+            if (!raw || typeof raw !== "object") return out;
+            out.all = clamp(num(raw.all, 1), 0.5, 2);
+            for (const key of GROUPS) {
+              const src = raw.groups && raw.groups[key];
+              if (!src) continue;
+              out.groups[key] = {
+                dx: clamp(num(src.dx, 0), -4000, 4000),
+                dy: clamp(num(src.dy, 0), -4000, 4000),
+                s: clamp(num(src.s, 1), 0.3, 2.2),
+                spread: clamp(num(src.spread, 0), -12, 28),
+              };
+            }
+          } catch {}
+          return out;
+        }
 
-  document.addEventListener("gesturestart", (e) => e.preventDefault());
-  document.addEventListener("contextmenu", (e) => e.preventDefault());
-  document.addEventListener("dblclick", (e) => e.preventDefault());
+        let layout = loadLayout();
+        let selected = "dpad";
 
-  connect();
-})();
-</script>
-</body>
+        function applyGroup(key) {
+          const el = groupEls[key];
+          if (!el) return;
+          const g = layout.groups[key];
+          el.style.setProperty("--dx", `${g.dx.toFixed(1)}px`);
+          el.style.setProperty("--dy", `${g.dy.toFixed(1)}px`);
+          el.style.setProperty("--spread", `${g.spread.toFixed(1)}%`);
+          el.style.setProperty(
+            "--s",
+            clamp(g.s * layout.all, 0.25, 3).toFixed(3),
+          );
+        }
+
+        function applyLayout() {
+          for (const key of GROUPS) applyGroup(key);
+        }
+
+        function saveLayout() {
+          try {
+            localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
+          } catch {}
+        }
+
+        const settingsEl = document.getElementById("settings");
+        const settingsBtn = document.getElementById("settingsBtn");
+        const closeSettingsBtn = document.getElementById("closeSettings");
+        const editLayoutBtn = document.getElementById("editLayout");
+        const resetLayoutBtn = document.getElementById("resetLayout");
+        const sizeAll = document.getElementById("sizeAll");
+        const sizeSliders = Array.from(
+          document.querySelectorAll("[data-size]"),
+        );
+        const editbar = document.getElementById("editbar");
+        const editSize = document.getElementById("editSize");
+        const editSizeVal = document.getElementById("editSizeVal");
+        const selName = document.getElementById("selName");
+        const resetEditBtn = document.getElementById("resetEdit");
+        const doneEditBtn = document.getElementById("doneEdit");
+
+        function pct(value) {
+          return `${Math.round(value * 100)}%`;
+        }
+
+        function syncInputs() {
+          sizeAll.value = Math.round(layout.all * 100);
+          document.getElementById("out-all").textContent = pct(layout.all);
+          for (const input of sizeSliders) {
+            const key = input.dataset.size;
+            const g = layout.groups[key];
+            input.value = Math.round(g.s * 100);
+            const out = document.getElementById(`out-${key}`);
+            if (out) out.textContent = pct(g.s);
+          }
+          const sel = layout.groups[selected];
+          editSize.value = Math.round(sel.s * 100);
+          editSizeVal.textContent = pct(sel.s);
+        }
+
+        function selectGroup(key) {
+          selected = key;
+          for (const g of GROUPS)
+            groupEls[g].classList.toggle("selected", g === key);
+          selName.textContent = GROUP_LABEL[key];
+          syncInputs();
+        }
+
+        function openSettings() {
+          releaseAll();
+          if (editing) return;
+          settingsEl.classList.add("open");
+          settingsEl.setAttribute("aria-hidden", "false");
+          syncInputs();
+        }
+
+        function closeSettings() {
+          settingsEl.classList.remove("open");
+          settingsEl.setAttribute("aria-hidden", "true");
+          saveLayout();
+        }
+
+        function startEditing() {
+          releaseAll();
+          settingsEl.classList.remove("open");
+          settingsEl.setAttribute("aria-hidden", "true");
+          editing = true;
+          document.body.classList.add("editing");
+          editbar.setAttribute("aria-hidden", "false");
+          selectGroup(selected);
+          toast("Drag to move \u00b7 pinch or slider to resize");
+        }
+
+        function stopEditing() {
+          editing = false;
+          document.body.classList.remove("editing");
+          editbar.setAttribute("aria-hidden", "true");
+          for (const key of GROUPS)
+            groupEls[key].classList.remove("selected", "dragging");
+          saveLayout();
+          toast("Layout saved");
+        }
+
+        function resetLayout() {
+          layout = freshLayout();
+          applyLayout();
+          syncInputs();
+          saveLayout();
+          toast("Layout reset");
+        }
+
+        settingsBtn.addEventListener("click", openSettings);
+        closeSettingsBtn.addEventListener("click", closeSettings);
+        settingsEl.addEventListener("click", (e) => {
+          if (e.target === settingsEl) closeSettings();
+        });
+        editLayoutBtn.addEventListener("click", startEditing);
+        resetLayoutBtn.addEventListener("click", resetLayout);
+        doneEditBtn.addEventListener("click", stopEditing);
+        resetEditBtn.addEventListener("click", resetLayout);
+
+        sizeAll.addEventListener("input", () => {
+          layout.all = clamp(+sizeAll.value / 100, 0.5, 2);
+          applyLayout();
+          syncInputs();
+          saveLayout();
+        });
+
+        for (const input of sizeSliders) {
+          input.addEventListener("input", () => {
+            const key = input.dataset.size;
+            layout.groups[key].s = clamp(+input.value / 100, 0.3, 2.2);
+            applyGroup(key);
+            syncInputs();
+            saveLayout();
+          });
+        }
+
+        editSize.addEventListener("input", () => {
+          layout.groups[selected].s = clamp(+editSize.value / 100, 0.3, 2.2);
+          applyGroup(selected);
+          syncInputs();
+          saveLayout();
+        });
+
+        function bindDrag(key) {
+          const el = groupEls[key];
+          if (!el) return;
+          let pid = null;
+          const pointers = new Map();
+          let sx = 0;
+          let sy = 0;
+          let ox = 0;
+          let oy = 0;
+          let startRect = null;
+          let pinching = false;
+          let pinchSpacing = false;
+          let pinchDistance = 0;
+          let pinchScale = 1;
+          let pinchSpread = 0;
+          let pinchWidth = 1;
+
+          el.addEventListener(
+            "pointerdown",
+            (e) => {
+              if (!editing) return;
+              e.preventDefault();
+              e.stopPropagation();
+              if (pointers.size >= 2) return;
+              if (
+                pointers.size === 1 &&
+                (e.pointerType !== "touch" ||
+                  !Array.from(pointers.values())[0].touch)
+              ) {
+                return;
+              }
+              pointers.set(e.pointerId, {
+                x: e.clientX,
+                y: e.clientY,
+                touch: e.pointerType === "touch",
+              });
+              selectGroup(key);
+              try {
+                el.setPointerCapture(e.pointerId);
+              } catch {}
+              if (pointers.size === 1) {
+                pid = e.pointerId;
+                const g = layout.groups[key];
+                ox = g.dx;
+                oy = g.dy;
+                sx = e.clientX;
+                sy = e.clientY;
+                startRect = el.getBoundingClientRect();
+                el.classList.add("dragging");
+                return;
+              }
+              const [first, second] = Array.from(pointers.values());
+              pinching = true;
+              pinchDistance = Math.max(
+                1,
+                Math.hypot(second.x - first.x, second.y - first.y),
+              );
+              pinchSpacing = key === "dpad" || key === "face";
+              if (pinchSpacing) {
+                pinchSpread = layout.groups[key].spread;
+                pinchWidth = Math.max(1, el.getBoundingClientRect().width);
+              } else {
+                pinchScale = layout.groups[key].s;
+              }
+              el.classList.remove("dragging");
+            },
+            true,
+          );
+
+          el.addEventListener("pointermove", (e) => {
+            if (!editing || !pointers.has(e.pointerId)) return;
+            e.preventDefault();
+            pointers.set(e.pointerId, {
+              ...pointers.get(e.pointerId),
+              x: e.clientX,
+              y: e.clientY,
+            });
+            if (pinching && pointers.size === 2) {
+              const [first, second] = Array.from(pointers.values());
+              const distance = Math.hypot(
+                second.x - first.x,
+                second.y - first.y,
+              );
+              if (pinchSpacing) {
+                layout.groups[key].spread = clamp(
+                  pinchSpread +
+                    ((distance - pinchDistance) / (pinchWidth * 2)) * 100,
+                  -12,
+                  28,
+                );
+              } else {
+                layout.groups[key].s = clamp(
+                  pinchScale * (distance / pinchDistance),
+                  0.3,
+                  2.2,
+                );
+              }
+              applyGroup(key);
+              syncInputs();
+              return;
+            }
+            if (e.pointerId !== pid) return;
+            const g = layout.groups[key];
+            const rect = startRect;
+            const cx0 = rect.left + rect.width / 2;
+            const cy0 = rect.top + rect.height / 2;
+            const margin = 26;
+            const cx = clamp(
+              cx0 + (e.clientX - sx),
+              margin,
+              window.innerWidth - margin,
+            );
+            const cy = clamp(
+              cy0 + (e.clientY - sy),
+              margin,
+              window.innerHeight - margin,
+            );
+            g.dx = ox + (cx - cx0);
+            g.dy = oy + (cy - cy0);
+            applyGroup(key);
+          });
+
+          const end = (e) => {
+            if (!pointers.has(e.pointerId)) return;
+            pointers.delete(e.pointerId);
+            if (pinching) {
+              pinching = false;
+              if (pointers.size === 1) {
+                const [remainingPid, point] = Array.from(pointers.entries())[0];
+                pid = remainingPid;
+                sx = point.x;
+                sy = point.y;
+                ox = layout.groups[key].dx;
+                oy = layout.groups[key].dy;
+                startRect = el.getBoundingClientRect();
+                el.classList.add("dragging");
+                saveLayout();
+                return;
+              }
+            }
+            if (e.pointerId === pid || pointers.size === 0) {
+              pid = null;
+              startRect = null;
+              el.classList.remove("dragging");
+              saveLayout();
+            }
+          };
+          el.addEventListener("pointerup", end);
+          el.addEventListener("pointercancel", end);
+          el.addEventListener("lostpointercapture", end);
+        }
+
+        for (const key of GROUPS) bindDrag(key);
+
+        applyLayout();
+        selectGroup("dpad");
+
+        // ------------------------------------------------------------- misc init
+
+        document.addEventListener("gesturestart", (e) => e.preventDefault());
+        document.addEventListener("contextmenu", (e) => e.preventDefault());
+        document.addEventListener("dblclick", (e) => e.preventDefault());
+
+        connect();
+      })();
+    </script>
+  </body>
 </html>

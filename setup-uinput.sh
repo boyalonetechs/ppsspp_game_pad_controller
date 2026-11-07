@@ -1,10 +1,3 @@
-#!/usr/bin/env bash
-#
-# One-time setup for the phone gamepad.
-# Grants your logged-in user access to /dev/uinput and makes sure the
-# PPSSPP snap is allowed to see joystick devices.
-#
-# Run with:  sudo ./setup-uinput.sh
 
 set -euo pipefail
 
@@ -35,9 +28,6 @@ udevadm trigger --action=change /sys/devices/virtual/misc/uinput 2>/dev/null || 
 sleep 1
 
 echo "[3/5] Checking access for user '${REAL_USER}'…"
-
-# udev's uaccess ACL can take a moment to land after the trigger above.
-# Check the ACL directly as well: some environments have a flaky `runuser`.
 acl_grants_access() {
   getfacl -p /dev/uinput 2>/dev/null | grep -q "^user:${REAL_USER}:rw"
 }

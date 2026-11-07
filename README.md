@@ -1,6 +1,6 @@
 # PSP Phone Pad
 
-Use your phone as a wireless PSP controller for PPSSPP on this Linux machine.
+Use your phone as a wireless PSP controller for PPSSPP on  Linux machines.
 
 The phone opens a web page — no app to install — and the PC turns its touches
 into a real virtual **Xbox 360 gamepad** (`/dev/uinput`). PPSSPP sees a normal
@@ -8,12 +8,12 @@ controller with a working analog stick, so every game works, not just
 keyboard-mapped ones.
 
 ```
-phone browser  ──Wi-Fi──►  server.py (this folder)  ──uinput──►  virtual Xbox 360 pad  ──►  PPSSPP
+phone browser  ──Wi-Fi──►  server.py  ──uinput──►  virtual Xbox 360 pad  ──►  PPSSPP
 ```
 
 ## What you need
 
-- Linux with `/dev/uinput` (this machine: Ubuntu 26.04 ✓)
+- Linux with `/dev/uinput` (machine: Ubuntu 26.04 ✓)
 - Python 3 with the `websockets` package (already installed: 17.2 ✓)
 - PPSSPP — you already have the **`ppsspp-emu` snap** installed ✓
 - Phone and PC on the **same Wi-Fi network** (or the phone's hotspot)
@@ -73,7 +73,7 @@ Shortcut — start the server and launch PPSSPP together:
 | ANALOG nub | Analog stick | left X/Y |
 | START / SELECT | Start / Select | Start / Back |
 | MENU | pause menu | Guide |
-| ⏩ FF / ⏪ REW | fast-forward / rewind | L3 / R3 |
+| FF / REW | fast-forward / rewind | L3 / R3 |
 
 The analog nub sends true analog values, with a small dead zone.
 
