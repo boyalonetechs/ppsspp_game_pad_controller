@@ -77,6 +77,20 @@ Shortcut — start the server and launch PPSSPP together:
 
 The analog nub sends true analog values, with a small dead zone.
 
+## Customizing the pad
+
+Tap the ⚙ button next to fullscreen to open **Controls**:
+
+- **All controls** scales the whole layout. Each control (D-pad, analog,
+  face buttons, L, R, Start/hotkeys) also has its own size slider.
+- **Edit layout** enters drag mode. Tap a control to select it (it gets a
+  bright outline), drag it anywhere, and use the bottom slider to resize just
+  that control. **Reset** restores the default layout.
+- Everything is stored in the phone browser (`localStorage`), so your layout
+  survives reloads. It is per device — a different phone keeps its own layout.
+- Buttons grow when pressed and grow a little more when held, like the
+  PPSSPP Gold touch controls.
+
 ## Notes & troubleshooting
 
 **The phone can't open the page**
