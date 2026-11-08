@@ -10,6 +10,9 @@ Usage:
     python3 server.py                 # serve on http://<your-ip>:8080
     python3 server.py --launch        # also launch the PPSSPP snap
     python3 server.py --dry-run       # no /dev/uinput, just log input
+
+The web pad uses WebSocket on TCP 8080.  The optional mobile app uses UDP on
+8081 and shares the same virtual pad.
 """
 
 from __future__ import annotations
@@ -116,6 +119,27 @@ BUTTON_CODES = {
     "r3": BTN_THUMBR,
 }
 
+UDP_MAGIC = b"PSP1"
+UDP_PORT = 8081
+UDP_TIMEOUT = 0.4
+
+UDP_BUTTON_BITS = (
+    ("triangle", 0),
+    ("circle", 1),
+    ("cross", 2),
+    ("square", 3),
+    ("l", 4),
+    ("r", 5),
+    ("select", 6),
+    ("start", 7),
+    ("guide", 8),
+    ("l3", 9),
+    ("r3", 10),
+)
+
+UDP_PACKET = struct.Struct("<4sHHB4hBB")
+UDP_ECHO = struct.Struct("<4sH")
+
 _ABS_SPECS = [
     (ABS_X, -32768, 32767),
     (ABS_Y, -32768, 32767),
@@ -140,11 +164,12 @@ class VirtualPad:
         self.fd: int | None = None
         self._buttons: dict[str, bool] = {name: False for name in BUTTON_CODES}
         self._axis = (0, 0)
+        self._right_axis = (0, 0)
+        self._triggers = (0, 0)
         self._hat = (0, 0)
         if not dry_run:
             self._create()
 
-    # -- setup -------------------------------------------------------------
     def _create(self) -> None:
         try:
             fd = os.open("/dev/uinput", os.O_WRONLY | os.O_NONBLOCK)
@@ -231,6 +256,57 @@ class VirtualPad:
             self._emit(EV_ABS, ABS_Y, iy)
         self._syn()
 
+    def set_right_axis(self, x: float, y: float) -> None:
+        x = max(-1.0, min(1.0, float(x)))
+        y = max(-1.0, min(1.0, float(y)))
+        ix = int(round(x * 32767))
+        iy = int(round(y * 32767))
+        if (ix, iy) == self._right_axis:
+            return
+        old = self._right_axis
+        self._right_axis = (ix, iy)
+        if self.dry_run:
+            print(f"[dry-run] right axis {x:+.2f} {y:+.2f}", flush=True)
+            return
+        if ix != old[0]:
+            self._emit(EV_ABS, ABS_RX, ix)
+        if iy != old[1]:
+            self._emit(EV_ABS, ABS_RY, iy)
+        self._syn()
+
+    def set_triggers(self, left: int, right: int) -> None:
+        left = max(0, min(255, int(left)))
+        right = max(0, min(255, int(right)))
+        if (left, right) == self._triggers:
+            return
+        old = self._triggers
+        self._triggers = (left, right)
+        if self.dry_run:
+            print(f"[dry-run] triggers {left} {right}", flush=True)
+            return
+        if left != old[0]:
+            self._emit(EV_ABS, ABS_Z, left)
+        if right != old[1]:
+            self._emit(EV_ABS, ABS_RZ, right)
+        self._syn()
+
+    def apply_udp_state(
+        self,
+        buttons: int,
+        hat: int,
+        left: tuple[float, float],
+        right: tuple[float, float],
+        triggers: tuple[int, int],
+    ) -> None:
+        for name, bit in UDP_BUTTON_BITS:
+            self.set_button(name, bool(buttons & (1 << bit)))
+        hx = (hat & 0x03) - 1
+        hy = ((hat >> 2) & 0x03) - 1
+        self.set_hat(hx, hy)
+        self.set_axis(*left)
+        self.set_right_axis(*right)
+        self.set_triggers(*triggers)
+
     def set_hat(self, hx: int, hy: int) -> None:
         hx = max(-1, min(1, int(hx)))
         hy = max(-1, min(1, int(hy)))
@@ -248,19 +324,25 @@ class VirtualPad:
         self._syn()
 
     def release_all(self) -> None:
-        if self.dry_run:
-            return
         for name, down in self._buttons.items():
             if down:
-                self._emit(EV_KEY, BUTTON_CODES[name], 0)
                 self._buttons[name] = False
-        self._emit(EV_ABS, ABS_X, 0)
-        self._emit(EV_ABS, ABS_Y, 0)
-        self._emit(EV_ABS, ABS_HAT0X, 0)
-        self._emit(EV_ABS, ABS_HAT0Y, 0)
+                if not self.dry_run:
+                    self._emit(EV_KEY, BUTTON_CODES[name], 0)
+        if not self.dry_run:
+            self._emit(EV_ABS, ABS_X, 0)
+            self._emit(EV_ABS, ABS_Y, 0)
+            self._emit(EV_ABS, ABS_RX, 0)
+            self._emit(EV_ABS, ABS_RY, 0)
+            self._emit(EV_ABS, ABS_Z, 0)
+            self._emit(EV_ABS, ABS_RZ, 0)
+            self._emit(EV_ABS, ABS_HAT0X, 0)
+            self._emit(EV_ABS, ABS_HAT0Y, 0)
+            self._syn()
         self._axis = (0, 0)
+        self._right_axis = (0, 0)
+        self._triggers = (0, 0)
         self._hat = (0, 0)
-        self._syn()
 
     def close(self) -> None:
         if self.fd is None:
@@ -278,6 +360,69 @@ class VirtualPad:
         except OSError:
             pass
         self.fd = None
+
+
+def _decode_packet(data: bytes) -> dict | None:
+    if len(data) != UDP_PACKET.size:
+        return None
+    magic, seq, buttons, hat, lx, ly, rx, ry, lt, rt = UDP_PACKET.unpack(data)
+    if magic != UDP_MAGIC:
+        return None
+    return {
+        "seq": seq,
+        "buttons": buttons,
+        "hat": hat,
+        "left": (lx / 32767.0, ly / 32767.0),
+        "right": (rx / 32767.0, ry / 32767.0),
+        "triggers": (lt, rt),
+    }
+
+
+class UdpBridge(asyncio.DatagramProtocol):
+    def __init__(self, pad: VirtualPad, port: int) -> None:
+        self.pad = pad
+        self.port = port
+        self.transport: asyncio.DatagramTransport | None = None
+        self.last_rx = 0.0
+        self.active = False
+        self.peer: tuple[str, int] | None = None
+        self.packets = 0
+
+    def connection_made(self, transport) -> None:
+        self.transport = transport
+
+    def datagram_received(self, data: bytes, addr) -> None:
+        decoded = _decode_packet(data)
+        if decoded is None:
+            return
+        self.packets += 1
+        self.last_rx = time.monotonic()
+        if addr != self.peer:
+            print(f"* app connected from {addr[0]}:{addr[1]} (udp)", flush=True)
+            self.peer = addr
+        if not self.active:
+            self.active = True
+        self.pad.apply_udp_state(
+            decoded["buttons"],
+            decoded["hat"],
+            decoded["left"],
+            decoded["right"],
+            decoded["triggers"],
+        )
+        if self.transport is not None:
+            self.transport.sendto(UDP_ECHO.pack(UDP_MAGIC, decoded["seq"]), addr)
+
+    def connection_lost(self, exc) -> None:
+        self.transport = None
+
+
+async def udp_watchdog(pad: VirtualPad, bridge: UdpBridge) -> None:
+    while True:
+        await asyncio.sleep(0.05)
+        if bridge.active and time.monotonic() - bridge.last_rx > UDP_TIMEOUT:
+            bridge.active = False
+            pad.release_all()
+            print("* app link idle, all inputs released", flush=True)
 
 
 PAD_FIX = {
@@ -420,8 +565,9 @@ def local_ips() -> list[str]:
 
 
 class Server:
-    def __init__(self, pad: VirtualPad) -> None:
+    def __init__(self, pad: VirtualPad, bridge: UdpBridge | None = None) -> None:
         self.pad = pad
+        self.bridge = bridge
         self.clients = 0
 
     async def handler(self, ws) -> None:
@@ -464,7 +610,7 @@ class Server:
                     self.pad.set_hat(hx, hy)
                 elif kind == "ping":
                     await ws.send(json.dumps({"t": "pong", "ts": msg.get("ts")}))
-        except Exception as exc:  # connection reset, etc.
+        except Exception as exc:
             print(f"* phone disconnected ({exc.__class__.__name__})", flush=True)
         finally:
             for name in pressed:
@@ -489,6 +635,9 @@ class Server:
                     "clients": self.clients,
                     "dry_run": self.pad.dry_run,
                     "uinput": self.pad.fd is not None,
+                    "udp_port": self.bridge.port if self.bridge else None,
+                    "udp_active": bool(self.bridge and self.bridge.active),
+                    "udp_packets": self.bridge.packets if self.bridge else 0,
                 }
             ).encode()
             return _response(200, "OK", body, "application/json")
@@ -499,7 +648,7 @@ class Server:
         return _response(404, "Not Found", b"not found", "text/plain; charset=utf-8")
 
 
-def print_banner(port: int) -> None:
+def print_banner(port: int, udp_port: int | None) -> None:
     ips = local_ips()
     print()
     print("  ┌──────────────────────────────────────────────┐")
@@ -507,10 +656,17 @@ def print_banner(port: int) -> None:
     print("  └──────────────────────────────────────────────┘")
     if ips:
         for ip in ips:
-            print(f"  Open on your phone:  http://{ip}:{port}")
+            print(f"  Web pad:   http://{ip}:{port}")
+            if udp_port:
+                print(f"  Mobile app: {ip}  port {udp_port} (UDP)")
     else:
-        print(f"  Open on your phone:  http://<this-pc-ip>:{port}")
+        print(f"  Web pad:   http://<this-pc-ip>:{port}")
+        if udp_port:
+            print(f"  Mobile app: <this-pc-ip>  port {udp_port} (UDP)")
     print()
+    if udp_port:
+        print("  Wi-Fi UDP is listening for the mobile app.")
+        print("  WebSocket and UDP share one virtual pad; use one controller.")
     print("  Phone and PC must be on the same Wi-Fi network.")
     print("  Keep this terminal open.  Press Ctrl+C to stop.")
     print()
@@ -530,7 +686,23 @@ async def amain(args: argparse.Namespace) -> None:
             print("         Quit PPSSPP, then start it again after this server.")
         fix_controls()
 
-    server = Server(pad)
+    bridge: UdpBridge | None = None
+    udp_transport: asyncio.DatagramTransport | None = None
+    if not args.no_udp:
+        loop = asyncio.get_running_loop()
+        try:
+            udp_transport, bridge = await loop.create_datagram_endpoint(
+                lambda: UdpBridge(pad, args.udp_port),
+                local_addr=(args.host, args.udp_port),
+            )
+            asyncio.create_task(udp_watchdog(pad, bridge))
+            print(f"Mobile app bridge listening on UDP {args.udp_port}")
+        except OSError as exc:
+            print(f"WARNING: could not open UDP {args.udp_port}: {exc}")
+            print("         The web pad still works on TCP.")
+            bridge = None
+
+    server = Server(pad, bridge)
     try:
         async with serve(
             server.handler,
@@ -541,7 +713,7 @@ async def amain(args: argparse.Namespace) -> None:
             ping_timeout=20,
             max_size=1 << 20,
         ):
-            print_banner(args.port)
+            print_banner(args.port, args.udp_port if bridge else None)
             if args.launch:
                 async def launch() -> None:
                     await asyncio.sleep(1.5)
@@ -560,6 +732,8 @@ async def amain(args: argparse.Namespace) -> None:
                 asyncio.create_task(launch())
             await asyncio.Event().wait()
     finally:
+        if udp_transport is not None:
+            udp_transport.close()
         pad.close()
         print("\nVirtual pad removed. Bye.")
 
@@ -570,6 +744,8 @@ def main() -> int:
     parser.add_argument("--port", type=int, default=8080, help="listen port (default: 8080)")
     parser.add_argument("--dry-run", action="store_true", help="don't create /dev/uinput device")
     parser.add_argument("--no-fix-controls", action="store_true", help="don't touch PPSSPP controls.ini")
+    parser.add_argument("--no-udp", action="store_true", help="don't open the mobile app UDP bridge")
+    parser.add_argument("--udp-port", type=int, default=UDP_PORT, help="UDP bridge port (default: 8081)")
     parser.add_argument("--launch", action="store_true", help="launch the PPSSPP snap after starting")
     args = parser.parse_args()
 
