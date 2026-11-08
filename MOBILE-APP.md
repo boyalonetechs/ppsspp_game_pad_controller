@@ -8,6 +8,10 @@ a replacement for the web pad.
 > **Status: design only.** No app code or UDP bridge exists yet. Until it does,
 > use the web controller.
 
+> **The plan:** PPSSPP keeps running on the **laptop**. The mobile app is only a
+> **pad/controller** for that laptop — it does not emulate games and does not
+> run PPSSPP on the phone.
+
 ## Why a mobile app
 
 The web pad already runs on Android and iPhone with no install. The app adds:
@@ -25,10 +29,13 @@ the web UI.
 
 ## Where PPSSPP runs
 
-PPSSPP stays on the Linux PC. The phone is only the controller. The PC bridge
-still creates the same virtual **Microsoft X-Box 360 pad** through
-`/dev/uinput`, so PPSSPP and the existing `controls.ini` mapping keep working
+PPSSPP runs on the **laptop**, exactly as it does with the web controller. The
+phone app is only the pad: it sends button and stick state to the laptop's
+`server.py`, which drives the same virtual **Microsoft X-Box 360 pad** through
+`/dev/uinput`. The existing PPSSPP `controls.ini` mapping keeps working
 unchanged.
+
+Running PPSSPP (or any emulator) on the phone is **not** part of this plan.
 
 ```
  Flutter app (Android / iPhone)
@@ -55,8 +62,8 @@ use one controller at a time.
 | **iPhone** | ✅ | ❌ not available to normal apps |
 
 - **Wi-Fi UDP** is the default on both platforms and works over a router, a
-  hotspot, or the phone's own hotspot with the PC joined to it.
-- **USB on Android** is USB tethering: the PC gets an address such as
+  hotspot, or the phone's own hotspot with the laptop joined to it.
+- **USB on Android** is USB tethering: the laptop gets an address such as
   `192.168.42.x` and the same UDP protocol runs over that interface. No extra
   app code, only a different saved IP.
 - **USB on iPhone is not possible** for a normal app — iOS does not expose the
@@ -77,7 +84,7 @@ One **Flutter** codebase for both platforms:
 
 No cloud, no analytics, no internet dependency.
 
-## PC-side changes
+## Laptop-side changes
 
 Extend `server.py` instead of replacing it:
 
@@ -125,11 +132,12 @@ phone hotspot, or a USB tether with no WAN connection. Android needs the
 `INTERNET` permission (local sockets require it); iOS shows its **Local
 Network** prompt on first connect.
 
-Two honest caveats:
+A few honest caveats:
 
-- The app does **not** remove the PC. PPSSPP still runs on the PC and still
-  needs the local link. The only truly PC-free option is running PPSSPP on the
-  phone itself, which is a different setup.
+- The app does **not** remove the laptop. PPSSPP still runs there and still
+  needs the local link; the phone is only the controller.
+- Running PPSSPP on the phone is explicitly out of scope for this plan. The app
+  never emulates games.
 - Broadcast/multicast discovery on iOS requires Apple's Multicast Networking
   entitlement, so **v1 uses manual IP entry plus the last saved address**
   (Bonjour is an alternative). No broadcast dependency.
@@ -191,11 +199,11 @@ flutter build ipa --release
 
 **Connecting the app**
 
-1. Start the PC server as usual (`./start.sh`).
-2. Wi-Fi: enter the PC's LAN IP and port 8081.
-3. Android USB: enable USB tethering, then use the PC's new `192.168.42.x`
+1. Start the laptop server as usual (`./start.sh`).
+2. Wi-Fi: enter the laptop's LAN IP and port 8081.
+3. Android USB: enable USB tethering, then use the laptop's new `192.168.42.x`
    address (`ip -4 addr`).
-4. iPhone: enter the PC's Wi-Fi IP manually; accept the Local Network prompt.
+4. iPhone: enter the laptop's Wi-Fi IP manually; accept the Local Network prompt.
 
 ## Open decisions
 
