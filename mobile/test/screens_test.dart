@@ -4,6 +4,8 @@ import 'package:psp_phone_pad_app/app.dart';
 import 'package:psp_phone_pad_app/src/app_state.dart';
 import 'package:psp_phone_pad_app/src/layout.dart';
 import 'package:psp_phone_pad_app/src/screens/pad_screen.dart';
+import 'package:psp_phone_pad_app/src/widgets/action_bar.dart';
+import 'package:psp_phone_pad_app/src/widgets/face_pad.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -51,6 +53,85 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('status sits at the top and action bar at the bottom', (
+    WidgetTester tester,
+  ) async {
+    await setSurface(tester, const Size(844, 390));
+    final AppState app = buildApp();
+    addTearDown(app.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PadScreen(app: app, onOpenConnection: () {}),
+      ),
+    );
+    await tester.pump();
+    final double statusY = tester.getCenter(find.text('not connected')).dy;
+    final double actionsY = tester.getCenter(find.byType(ActionBar)).dy;
+    expect(statusY, lessThan(80));
+    expect(actionsY, greaterThan(280));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('edit panel is centered and face group exposes spacing', (
+    WidgetTester tester,
+  ) async {
+    await setSurface(tester, const Size(844, 390));
+    final AppState app = buildApp();
+    addTearDown(app.dispose);
+    app.setEditing(true);
+    app.selectGroup(PadGroup.face);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PadScreen(app: app, onOpenConnection: () {}),
+      ),
+    );
+    await tester.pump();
+    final Offset panel = tester.getCenter(
+      find.byKey(const Key('edit-layout-panel')),
+    );
+    expect(panel.dx, closeTo(422, 24));
+    expect(panel.dy, closeTo(195, 24));
+    expect(find.text('SPACING'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('pinching face buttons adjusts their spacing', (
+    WidgetTester tester,
+  ) async {
+    await setSurface(tester, const Size(844, 390));
+    final AppState app = buildApp();
+    addTearDown(app.dispose);
+    app.setEditing(true);
+    app.selectGroup(PadGroup.face);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PadScreen(app: app, onOpenConnection: () {}),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.text('HIDE'));
+    await tester.pump();
+    final double before = app.layout.groups[PadGroup.face]!.spread;
+    final Offset center = tester.getCenter(find.byType(FacePad));
+    final TestGesture first = await tester.startGesture(
+      center + const Offset(-18, 0),
+      pointer: 1,
+    );
+    final TestGesture second = await tester.startGesture(
+      center + const Offset(18, 0),
+      pointer: 2,
+    );
+    await tester.pump();
+    await first.moveBy(const Offset(-34, 0));
+    await second.moveBy(const Offset(34, 0));
+    await tester.pump();
+    await first.up();
+    await second.up();
+    await tester.pump();
+    expect(app.layout.groups[PadGroup.face]!.spread, greaterThan(before));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('settings dialog opens', (WidgetTester tester) async {
     await setSurface(tester, const Size(844, 390));
     final AppState app = buildApp();
@@ -65,6 +146,24 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     expect(find.text('Controls'), findsOneWidget);
+  });
+
+  testWidgets('settings dialog fits a small landscape screen', (
+    WidgetTester tester,
+  ) async {
+    await setSurface(tester, const Size(667, 375));
+    final AppState app = buildApp();
+    addTearDown(app.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PadScreen(app: app, onOpenConnection: () {}),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.bySemanticsLabel('Settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('BACKGROUND'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('connect screen renders at phone landscape size', (

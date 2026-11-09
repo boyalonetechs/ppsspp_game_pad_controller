@@ -93,7 +93,7 @@ class FacePad extends StatelessWidget {
                   : const Color(0x2604070A),
               border: Border.all(
                 color: pressed ? PadStyle.ink : PadStyle.line,
-                width: 2.4,
+                width: PadStyle.controlStroke,
               ),
             ),
             child: Padding(

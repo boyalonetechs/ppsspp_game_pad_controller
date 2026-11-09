@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'layout.dart';
 import 'transport.dart';
@@ -96,6 +98,60 @@ class AppState extends ChangeNotifier {
     _scheduleSettingsSave();
   }
 
+  void setBackgroundColor(int value) {
+    settings.backgroundColor = value;
+    notifyListeners();
+    _scheduleSettingsSave();
+  }
+
+  void setBackgroundDim(double value) {
+    settings.backgroundDim = value.clamp(0.0, 0.9);
+    notifyListeners();
+    _scheduleSettingsSave();
+  }
+
+  Future<bool> setBackgroundImage(String sourcePath) async {
+    try {
+      final Directory support = await getApplicationSupportDirectory();
+      final Directory folder = Directory('${support.path}/backgrounds');
+      if (!await folder.exists()) {
+        await folder.create(recursive: true);
+      }
+      final String extension = _imageExtension(sourcePath);
+      final String stamp = DateTime.now().microsecondsSinceEpoch.toString();
+      final File target = File(
+        '${folder.path}/pad-background-$stamp.$extension',
+      );
+      await File(sourcePath).copy(target.path);
+      settings.backgroundImage = target.path;
+      notifyListeners();
+      _scheduleSettingsSave();
+      try {
+        await for (final FileSystemEntity entity in folder.list()) {
+          if (entity is File && entity.path != target.path) {
+            await entity.delete();
+          }
+        }
+      } catch (_) {}
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> clearBackgroundImage() async {
+    final String path = settings.backgroundImage;
+    settings.backgroundImage = '';
+    if (path.isNotEmpty) {
+      try {
+        final File file = File(path);
+        if (await file.exists()) await file.delete();
+      } catch (_) {}
+    }
+    notifyListeners();
+    _scheduleSettingsSave();
+  }
+
   void resetLayout() {
     layout = PadLayout.defaults();
     notifyListeners();
@@ -129,4 +185,15 @@ class AppState extends ChangeNotifier {
     link.dispose();
     super.dispose();
   }
+}
+
+String _imageExtension(String path) {
+  final String name = path.split(RegExp(r'[/\\]')).last;
+  final int dot = name.lastIndexOf('.');
+  if (dot < 0 || dot == name.length - 1) return 'jpg';
+  final String extension = name.substring(dot + 1).toLowerCase();
+  if (extension.length > 5 || !RegExp(r'^[a-z0-9]+$').hasMatch(extension)) {
+    return 'jpg';
+  }
+  return extension;
 }

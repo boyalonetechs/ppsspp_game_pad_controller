@@ -80,7 +80,7 @@ class ActionBar extends StatelessWidget {
             color: pressed ? PadStyle.press : Colors.transparent,
             border: Border.all(
               color: pressed ? PadStyle.ink : PadStyle.line,
-              width: 2.4,
+              width: PadStyle.controlStroke,
             ),
           ),
           alignment: Alignment.center,
@@ -132,7 +132,7 @@ class ActionBar extends StatelessWidget {
     color: pressed ? PadStyle.press : const Color(0x3304070A),
     border: Border.all(
       color: pressed ? PadStyle.ink : PadStyle.line,
-      width: 2.4,
+      width: PadStyle.controlStroke,
     ),
   );
 }
