@@ -21,6 +21,9 @@ The web pad already runs on Android and iPhone with no install. The app adds:
 - direct touch handling with no browser chrome or browser input overhead;
 - haptics on button presses and hold feedback;
 - a saved, per-device layout with global and per-control sizes and spacing;
+- pinch-to-cluster and pinch-to-spread face buttons and D-pad;
+- a centered, collapsible layout editor;
+- a custom background color or photo with an outlined “Boy Alone” mark;
 - a dead-zone control and live link diagnostics;
 - a USB-cable option on Android.
 
@@ -78,6 +81,7 @@ One **Flutter** codebase for both platforms:
 |---|---|
 | UI | Flutter widgets and custom painters, `flutter_svg` for icons |
 | Settings | `shared_preferences` |
+| Background photo | `image_picker`, `path_provider` |
 | Display | landscape lock, immersive fullscreen, `wakelock_plus` |
 | Feedback | `HapticFeedback` on press and hold |
 | Transport | `RawDatagramSocket` — built in, no plugin |
@@ -158,11 +162,12 @@ pad after 400 ms without a packet.
 2. **Pad** — D-pad, analog stick, face buttons, L/R, MENU / FF / REW,
    START / SELECT, with press and hold growth and optional haptics.
 3. **Controls** — global and per-control size sliders, D-pad and face spacing,
-   dead zone, haptics, reset, and live link diagnostics (status, RTT, send
-   rate, address).
-4. **Edit layout** — tap a control to select, drag to move, pinch or use the
-   slider to resize, nudge for fine placement, collapse the toolbar to reach
-   covered controls. Saved per device.
+   a background color or photo with image shade, dead zone, haptics, reset, and
+   live link diagnostics (status, RTT, send rate, address).
+4. **Edit layout** — tap a control to select, drag to move, pinch the D-pad or
+   face buttons to cluster or spread them, use the slider to resize, nudge for
+   fine placement, and collapse the centered toolbar to reach covered controls.
+   Saved per device.
 5. **Link handling** — continues heartbeating after a drop, marks the link
    offline after 1.5 s without an echo, and releases every input when the app
    goes to the background.
@@ -276,7 +281,7 @@ mobile/
   lib/src/layout.dart             saved layout and preferences
   lib/src/theme.dart              etched style and custom painters
   lib/src/screens/                connect, pad, controls dialog
-  lib/src/widgets/                pad controls and press handling
+  lib/src/widgets/                pad controls, backdrop and press handling
   test/                           protocol, layout, transport, screens
   tool/generate_icons.swift       app icon and launch image generator
 ```

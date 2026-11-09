@@ -15,6 +15,7 @@ import '../widgets/control_group.dart';
 import '../widgets/dpad.dart';
 import '../widgets/face_pad.dart';
 import '../widgets/icons.dart';
+import '../widgets/pad_background.dart';
 import '../widgets/shoulder.dart';
 import 'settings_sheet.dart';
 
@@ -83,7 +84,7 @@ class _PadScreenState extends State<PadScreen> with WidgetsBindingObserver {
       widget.app,
       onEdit: () {
         widget.app.setEditing(true);
-        _showToast('Drag to move · pinch or slider to resize');
+        _showToast('Drag to move · pinch face buttons to space');
       },
     );
   }
@@ -108,6 +109,14 @@ class _PadScreenState extends State<PadScreen> with WidgetsBindingObserver {
           body: Stack(
             clipBehavior: Clip.none,
             children: <Widget>[
+              Positioned.fill(
+                child: PadBackground(
+                  color: app.settings.backgroundColor,
+                  imagePath: app.settings.backgroundImage,
+                  dim: app.settings.backgroundDim,
+                ),
+              ),
+              const Positioned.fill(child: BrandWatermark()),
               _group(
                 app,
                 PadGroup.l,
@@ -173,13 +182,14 @@ class _PadScreenState extends State<PadScreen> with WidgetsBindingObserver {
                   ),
                 ),
               ),
+              _topStatus(safe),
               if (!editing) _bottomBar(safe),
               if (editing) _editBar(context, safe, size),
               if (_toast != null)
                 Positioned(
                   left: 0,
                   right: 0,
-                  bottom: safe.bottom + 54,
+                  top: safe.top + 46,
                   child: Center(
                     child: IgnorePointer(child: _toastView(_toast!)),
                   ),
@@ -230,7 +240,7 @@ class _PadScreenState extends State<PadScreen> with WidgetsBindingObserver {
         final double side = clampValue(vmin * 0.38, 110, 180);
         return Rect.fromLTWH(
           safe.left + size.width * 0.24,
-          size.height - safe.bottom - side - 44,
+          size.height - safe.bottom - 88 - side,
           side,
           side,
         );
@@ -238,7 +248,7 @@ class _PadScreenState extends State<PadScreen> with WidgetsBindingObserver {
         final double side = clampValue(vmin * 0.25, 90, 155);
         return Rect.fromLTWH(
           safe.left + size.width * 0.065,
-          size.height - safe.bottom - size.height * 0.215 - side,
+          size.height - safe.bottom - 88 - side,
           side,
           side,
         );
@@ -246,7 +256,7 @@ class _PadScreenState extends State<PadScreen> with WidgetsBindingObserver {
         final double side = clampValue(vmin * 0.5, 160, 225);
         return Rect.fromLTWH(
           size.width - safe.right - size.width * 0.055 - side,
-          size.height - safe.bottom - size.height * 0.18 - side,
+          size.height - safe.bottom - 88 - side,
           side,
           side,
         );
@@ -265,11 +275,16 @@ class _PadScreenState extends State<PadScreen> with WidgetsBindingObserver {
         );
       case PadGroup.center:
         const double width = 340;
-        return Rect.fromLTWH((size.width - width) / 2, safe.top + 8, width, 40);
+        return Rect.fromLTWH(
+          (size.width - width) / 2,
+          size.height - safe.bottom - 88,
+          width,
+          40,
+        );
     }
   }
 
-  Widget _bottomBar(EdgeInsets safe) {
+  Widget _topStatus(EdgeInsets safe) {
     final PadLink link = widget.app.link;
     final String text;
     final Color color;
@@ -290,6 +305,46 @@ class _PadScreenState extends State<PadScreen> with WidgetsBindingObserver {
     return Positioned(
       left: 0,
       right: 0,
+      top: safe.top + 8,
+      child: Center(
+        child: GestureDetector(
+          onTap: widget.onOpenConnection,
+          child: Container(
+            height: 30,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(2),
+              color: const Color(0x8C000000),
+              border: Border.all(color: PadStyle.lineSoft, width: 1.6),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: color,
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(color: color, blurRadius: 6),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 7),
+                Text(text, style: PadStyle.label(size: 9)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _bottomBar(EdgeInsets safe) {
+    return Positioned(
+      left: 0,
+      right: 0,
       bottom: safe.bottom + 8,
       child: Center(
         child: Opacity(
@@ -297,43 +352,12 @@ class _PadScreenState extends State<PadScreen> with WidgetsBindingObserver {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              GestureDetector(
-                onTap: widget.onOpenConnection,
-                child: Container(
-                  height: 30,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(2),
-                    color: const Color(0x8C000000),
-                    border: Border.all(color: PadStyle.lineSoft, width: 1.6),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: color,
-                          boxShadow: <BoxShadow>[
-                            BoxShadow(color: color, blurRadius: 6),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 7),
-                      Text(text, style: PadStyle.label(size: 9)),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
               _smallIconButton(
                 icon: PadIcons.edit,
                 label: 'Edit layout',
                 onTap: () {
                   widget.app.setEditing(true);
-                  _showToast('Drag to move · pinch or slider to resize');
+                  _showToast('Drag to move · pinch face buttons to space');
                 },
               ),
               const SizedBox(width: 8),
@@ -378,113 +402,185 @@ class _PadScreenState extends State<PadScreen> with WidgetsBindingObserver {
     final AppState app = widget.app;
     final PadGroup selected = app.selectedGroup;
     final GroupLayout value = app.layout.groups[selected]!;
-    final double width = math.min(520, size.width * 0.62);
-    return Positioned(
-      left: (size.width - width) / 2,
-      top: safe.top + 8,
-      width: width,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 8, 8, 10),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(4),
-          color: PadStyle.panel,
-          border: Border.all(color: PadStyle.line, width: 1.8),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Text(
-                  'EDIT LAYOUT',
-                  style: PadStyle.label(size: 10, spacing: 1.6),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    _editCollapsed
-                        ? 'expand to adjust'
-                        : 'drag · pinch · tap to select',
-                    overflow: TextOverflow.ellipsis,
-                    style: PadStyle.label(
-                      size: 9,
-                      spacing: 0.4,
-                      weight: FontWeight.w500,
-                      color: PadStyle.muted,
+    final bool collapsed = _editCollapsed;
+    final double width = math.min(
+      collapsed ? 200 : 420,
+      size.width * (collapsed ? 0.3 : 0.52),
+    );
+    final bool compact = width < 360;
+    final String hint = selected.usesSpread
+        ? 'drag · pinch to space · tap to select'
+        : 'drag · pinch to resize · tap to select';
+    return Positioned.fill(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: width,
+            maxHeight: size.height - safe.top - safe.bottom - 24,
+          ),
+          child: SizedBox(
+            width: width,
+            child: SingleChildScrollView(
+              child: Container(
+                key: const Key('edit-layout-panel'),
+                padding: const EdgeInsets.fromLTRB(12, 8, 8, 10),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color: PadStyle.panel,
+                  border: Border.all(color: PadStyle.line, width: 1.8),
+                  boxShadow: const <BoxShadow>[
+                    BoxShadow(
+                      color: Color(0x99000000),
+                      blurRadius: 24,
+                      spreadRadius: 4,
                     ),
-                  ),
+                  ],
                 ),
-                _editTextButton(
-                  _editCollapsed ? 'EXPAND' : 'HIDE',
-                  () => setState(() => _editCollapsed = !_editCollapsed),
-                ),
-                const SizedBox(width: 6),
-                _editTextButton('RESET', () {
-                  app.resetLayout();
-                  _showToast('Layout reset');
-                }),
-                const SizedBox(width: 6),
-                _editTextButton('DONE', _finishEditing, primary: true),
-              ],
-            ),
-            if (!_editCollapsed) ...<Widget>[
-              const SizedBox(height: 8),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    for (final PadGroup group in PadGroup.values)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: _groupChip(group, app),
+                    Row(
+                      children: <Widget>[
+                        Text(
+                          collapsed ? 'EDIT' : 'EDIT LAYOUT',
+                          style: PadStyle.label(size: 10, spacing: 1.6),
+                        ),
+                        const SizedBox(width: 8),
+                        if (!collapsed)
+                          Expanded(
+                            child: Text(
+                              hint,
+                              overflow: TextOverflow.ellipsis,
+                              style: PadStyle.label(
+                                size: 9,
+                                spacing: 0.4,
+                                weight: FontWeight.w500,
+                                color: PadStyle.muted,
+                              ),
+                            ),
+                          )
+                        else
+                          const Spacer(),
+                        _editTextButton(
+                          collapsed ? 'SHOW' : 'HIDE',
+                          () =>
+                              setState(() => _editCollapsed = !_editCollapsed),
+                        ),
+                        if (!collapsed) ...<Widget>[
+                          const SizedBox(width: 6),
+                          _editTextButton('RESET', () {
+                            app.resetLayout();
+                            _showToast('Layout reset');
+                          }),
+                        ],
+                        const SizedBox(width: 6),
+                        _editTextButton('DONE', _finishEditing, primary: true),
+                      ],
+                    ),
+                    if (!collapsed) ...<Widget>[
+                      const SizedBox(height: 8),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: <Widget>[
+                            for (final PadGroup group in PadGroup.values)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: _groupChip(group, app),
+                              ),
+                          ],
+                        ),
                       ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: <Widget>[
+                          SizedBox(
+                            width: compact ? 64 : 96,
+                            child: Text(
+                              selected.label.toUpperCase(),
+                              overflow: TextOverflow.ellipsis,
+                              style: PadStyle.label(size: 9, spacing: 1.1),
+                            ),
+                          ),
+                          Expanded(
+                            child: SliderTheme(
+                              data: _sliderTheme(context),
+                              child: Slider(
+                                min: 30,
+                                max: selected.maxScale * 100,
+                                value: (value.scale * 100).clamp(
+                                  30,
+                                  selected.maxScale * 100,
+                                ),
+                                onChanged: (double v) =>
+                                    app.setGroupScale(selected, v / 100),
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 40,
+                            child: Text(
+                              '${(value.scale * 100).round()}%',
+                              textAlign: TextAlign.right,
+                              style: PadStyle.numeric(
+                                size: 10,
+                                color: PadStyle.muted,
+                              ),
+                            ),
+                          ),
+                          if (!compact) ...<Widget>[
+                            const SizedBox(width: 8),
+                            _nudge(app, selected, -12, 0),
+                            _nudge(app, selected, 12, 0),
+                            _nudge(app, selected, 0, -12),
+                            _nudge(app, selected, 0, 12),
+                          ],
+                        ],
+                      ),
+                      if (selected.usesSpread) ...<Widget>[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: <Widget>[
+                            SizedBox(
+                              width: compact ? 64 : 96,
+                              child: Text(
+                                'SPACING',
+                                style: PadStyle.label(size: 9, spacing: 1.1),
+                              ),
+                            ),
+                            Expanded(
+                              child: SliderTheme(
+                                data: _sliderTheme(context),
+                                child: Slider(
+                                  min: -30,
+                                  max: 28,
+                                  value: value.spread.clamp(-30, 28),
+                                  onChanged: (double v) =>
+                                      app.setSpread(selected, v),
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 48,
+                              child: Text(
+                                '${value.spread.round()}',
+                                textAlign: TextAlign.right,
+                                style: PadStyle.numeric(
+                                  size: 10,
+                                  color: PadStyle.muted,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
                   ],
                 ),
               ),
-              const SizedBox(height: 6),
-              Row(
-                children: <Widget>[
-                  SizedBox(
-                    width: 96,
-                    child: Text(
-                      selected.label.toUpperCase(),
-                      overflow: TextOverflow.ellipsis,
-                      style: PadStyle.label(size: 9, spacing: 1.1),
-                    ),
-                  ),
-                  Expanded(
-                    child: SliderTheme(
-                      data: _sliderTheme(context),
-                      child: Slider(
-                        min: 30,
-                        max: selected.maxScale * 100,
-                        value: (value.scale * 100).clamp(
-                          30,
-                          selected.maxScale * 100,
-                        ),
-                        onChanged: (double v) =>
-                            app.setGroupScale(selected, v / 100),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 40,
-                    child: Text(
-                      '${(value.scale * 100).round()}%',
-                      textAlign: TextAlign.right,
-                      style: PadStyle.numeric(size: 10, color: PadStyle.muted),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  _nudge(app, selected, -12, 0),
-                  _nudge(app, selected, 12, 0),
-                  _nudge(app, selected, 0, -12),
-                  _nudge(app, selected, 0, 12),
-                ],
-              ),
-            ],
-          ],
+            ),
+          ),
         ),
       ),
     );

@@ -28,6 +28,8 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>PSP Phone Pad uses a photo you choose as the pad background.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>PSP Phone Pad sends controller input to PPSSPP running on your laptop over the local network.</string>
 	<key>UIRequiresFullScreen</key>

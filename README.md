@@ -120,9 +120,10 @@ Connect from the app:
 
 The app is landscape locked and immersive. It has the same pad and press
 behaviour as the web version, plus haptics, a dead-zone control, per-control
-sizes and spacing, a drag/pinch layout editor saved per device, and live link
-status with round-trip time. The web page and the app share one virtual pad, so
-use one controller at a time.
+sizes and face-button pinch spacing, a centered drag/pinch layout editor, a
+custom color or photo background with an outlined “Boy Alone” mark, and live
+link status with round-trip time. The web page and the app share one virtual
+pad, so use one controller at a time.
 
 Detailed app notes and the UDP protocol are in [`MOBILE-APP.md`](MOBILE-APP.md)
 and [`mobile/README.md`](mobile/README.md).

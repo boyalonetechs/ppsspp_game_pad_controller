@@ -1,10 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../app_state.dart';
 import '../layout.dart';
 import '../theme.dart';
 import '../transport.dart';
 import '../widgets/icons.dart';
+import '../widgets/pad_background.dart';
 
 Future<void> showControlSettings(
   BuildContext context,
@@ -78,8 +82,8 @@ class _ControlsDialog extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Sizes are saved on this phone. Open Edit layout to drag controls '
-            'and pinch to resize.',
+            'Sizes and background are saved on this phone. Open Edit layout '
+            'to drag controls, pinch to space, or resize with the sliders.',
             style: PadStyle.label(
               size: 9,
               spacing: 0.3,
@@ -99,22 +103,25 @@ class _ControlsDialog extends StatelessWidget {
                           final bool wide = constraints.maxWidth > 500;
                           final Widget sizes = _sizes(app);
                           final Widget feel = _feel(app);
-                          if (!wide) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: <Widget>[
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              _BackgroundSection(app: app),
+                              const SizedBox(height: 16),
+                              if (wide)
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Expanded(child: sizes),
+                                    const SizedBox(width: 22),
+                                    SizedBox(width: 220, child: feel),
+                                  ],
+                                )
+                              else ...<Widget>[
                                 sizes,
                                 const SizedBox(height: 14),
                                 feel,
                               ],
-                            );
-                          }
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Expanded(child: sizes),
-                              const SizedBox(width: 22),
-                              SizedBox(width: 220, child: feel),
                             ],
                           );
                         },
@@ -244,6 +251,220 @@ class _ControlsDialog extends StatelessWidget {
         const SizedBox(height: 8),
         _LinkDiagnostics(app: app),
       ],
+    );
+  }
+}
+
+class _BackgroundSection extends StatefulWidget {
+  const _BackgroundSection({required this.app});
+
+  final AppState app;
+
+  @override
+  State<_BackgroundSection> createState() => _BackgroundSectionState();
+}
+
+class _BackgroundSectionState extends State<_BackgroundSection> {
+  bool _picking = false;
+  String _error = '';
+
+  Future<void> _pickImage() async {
+    if (_picking) return;
+    setState(() {
+      _picking = true;
+      _error = '';
+    });
+    try {
+      final XFile? picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 2400,
+        maxHeight: 2400,
+        imageQuality: 92,
+      );
+      if (picked == null) return;
+      final bool saved = await widget.app.setBackgroundImage(picked.path);
+      if (!saved && mounted) {
+        setState(() => _error = 'Could not save that image.');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'Could not open the photo library.');
+      }
+    } finally {
+      if (mounted) setState(() => _picking = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppSettings settings = widget.app.settings;
+    final bool hasImage =
+        settings.backgroundImage.isNotEmpty &&
+        File(settings.backgroundImage).existsSync();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Text(
+              'BACKGROUND',
+              style: PadStyle.label(
+                size: 9,
+                spacing: 1.8,
+                color: PadStyle.muted,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              'color or image',
+              style: PadStyle.label(
+                size: 9,
+                spacing: 0.3,
+                weight: FontWeight.w500,
+                color: PadStyle.muted,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 84,
+          clipBehavior: Clip.hardEdge,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(2),
+            border: Border.all(color: PadStyle.lineSoft, width: 1.2),
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: <Widget>[
+              PadBackground(
+                color: settings.backgroundColor,
+                imagePath: settings.backgroundImage,
+                dim: settings.backgroundDim,
+              ),
+              const BrandWatermark(),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 7,
+          runSpacing: 7,
+          children: <Widget>[
+            for (final int color in kPadBackgroundColors)
+              _swatch(color, settings.backgroundColor == color),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: _DialogButton(
+                label: _picking ? 'Opening...' : 'Choose image',
+                icon: PadIcons.image,
+                onTap: _pickImage,
+              ),
+            ),
+            if (hasImage) ...<Widget>[
+              const SizedBox(width: 8),
+              Expanded(
+                child: _DialogButton(
+                  label: 'Remove image',
+                  icon: PadIcons.close,
+                  onTap: () => widget.app.clearBackgroundImage(),
+                ),
+              ),
+            ],
+          ],
+        ),
+        if (hasImage) ...<Widget>[
+          const SizedBox(height: 8),
+          Row(
+            children: <Widget>[
+              SizedBox(
+                width: 96,
+                child: Text(
+                  'IMAGE SHADE',
+                  style: PadStyle.label(size: 10, spacing: 0.3),
+                ),
+              ),
+              Expanded(
+                child: SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 2,
+                    activeTrackColor: PadStyle.ink,
+                    inactiveTrackColor: PadStyle.lineSoft,
+                    thumbColor: PadStyle.ink,
+                    overlayColor: const Color(0x33D4E3F3),
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 6,
+                    ),
+                    overlayShape: const RoundSliderOverlayShape(
+                      overlayRadius: 14,
+                    ),
+                  ),
+                  child: Slider(
+                    min: 0,
+                    max: 80,
+                    value: (settings.backgroundDim * 100).clamp(0, 80),
+                    onChanged: (double v) =>
+                        widget.app.setBackgroundDim(v / 100),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 38,
+                child: Text(
+                  '${(settings.backgroundDim * 100).round()}%',
+                  textAlign: TextAlign.right,
+                  style: PadStyle.numeric(size: 10, color: PadStyle.muted),
+                ),
+              ),
+            ],
+          ),
+        ],
+        if (_error.isNotEmpty) ...<Widget>[
+          const SizedBox(height: 6),
+          Text(
+            _error,
+            style: PadStyle.label(
+              size: 9,
+              spacing: 0.2,
+              weight: FontWeight.w500,
+              color: PadStyle.bad,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _swatch(int color, bool selected) {
+    return GestureDetector(
+      onTap: () => widget.app.setBackgroundColor(color),
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          color: Color(color),
+          borderRadius: BorderRadius.circular(2),
+          border: Border.all(
+            color: selected ? PadStyle.ink : PadStyle.lineSoft,
+            width: selected ? 1.8 : 1.0,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: selected
+            ? Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: PadStyle.inkBright,
+                ),
+              )
+            : null,
+      ),
     );
   }
 }

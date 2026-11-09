@@ -27,10 +27,14 @@ Controls:
 
 - Connect screen: address, port, status.
 - Pad: D-pad, analog stick, face buttons, L/R, MENU, FF, REW, SELECT, START.
+  The connection status sits at the top; the action row sits at the bottom.
 - Settings: all sizes, per-control sizes, D-pad/face spacing, dead zone,
-  haptics, reset and live link diagnostics.
-- Edit layout: drag to move, pinch or slider to resize, nudge buttons for
-  fine placement, reset to defaults. The layout is stored per device.
+  haptics, a custom background color or photo with image shade, reset and live
+  link diagnostics.
+- Edit layout: drag to move, pinch the D-pad or face buttons to cluster or
+  spread them, use the slider to resize, nudge buttons for fine placement,
+  reset to defaults. The toolbar floats centered and collapses out of the way.
+  The layout and background are stored per device.
 
 ## Build
 
@@ -76,6 +80,6 @@ lib/src/app_state.dart            connection, layout and settings state
 lib/src/layout.dart               saved layout and preferences
 lib/src/theme.dart                etched style and custom painters
 lib/src/screens/                  connect, pad and controls dialog
-lib/src/widgets/                  pad controls and press handling
+lib/src/widgets/                  pad controls, backdrop and press handling
 tool/generate_icons.swift         app icon and launch image generator
 ```

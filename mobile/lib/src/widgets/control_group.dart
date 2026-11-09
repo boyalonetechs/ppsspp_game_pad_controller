@@ -28,6 +28,7 @@ class _ControlGroupState extends State<ControlGroup> {
   double _startDx = 0;
   double _startDy = 0;
   double _startScale = 1;
+  double _startSpread = 0;
   Offset _startFocal = Offset.zero;
   bool _pinching = false;
 
@@ -36,6 +37,7 @@ class _ControlGroupState extends State<ControlGroup> {
     _startDx = value.dx;
     _startDy = value.dy;
     _startScale = value.scale;
+    _startSpread = value.spread;
     _startFocal = details.focalPoint;
     _pinching = false;
     widget.app.selectGroup(widget.group);
@@ -44,7 +46,17 @@ class _ControlGroupState extends State<ControlGroup> {
   void _update(ScaleUpdateDetails details) {
     if (details.pointerCount >= 2) {
       _pinching = true;
-      widget.app.updateGroup(widget.group, scale: _startScale * details.scale);
+      if (widget.group.usesSpread) {
+        widget.app.updateGroup(
+          widget.group,
+          spread: _startSpread + (details.scale - 1) * 100,
+        );
+      } else {
+        widget.app.updateGroup(
+          widget.group,
+          scale: _startScale * details.scale,
+        );
+      }
       return;
     }
     if (_pinching) return;

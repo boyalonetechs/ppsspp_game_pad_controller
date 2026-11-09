@@ -17,6 +17,7 @@ class PadStyle {
   static const Color ok = Color(0xFF46D585);
   static const Color bad = Color(0xFFFF6B6B);
   static const Color warn = Color(0xFFE3C567);
+  static const double controlStroke = 1.6;
 
   static TextStyle label({
     double size = 10,
@@ -124,7 +125,7 @@ class ShoulderPainter extends CustomPainter {
       Paint()
         ..color = PadStyle.line
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.4
+        ..strokeWidth = PadStyle.controlStroke
         ..strokeJoin = StrokeJoin.round,
     );
   }
@@ -167,7 +168,7 @@ class DpadPainter extends CustomPainter {
         Paint()
           ..color = PadStyle.line
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.4,
+          ..strokeWidth = PadStyle.controlStroke,
       );
     }
 
@@ -187,7 +188,7 @@ class DpadPainter extends CustomPainter {
       Paint()
         ..color = PadStyle.line
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.4,
+        ..strokeWidth = PadStyle.controlStroke,
     );
 
     void chevron(
@@ -318,7 +319,7 @@ class StickBasePainter extends CustomPainter {
       Paint()
         ..color = PadStyle.line
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.6,
+        ..strokeWidth = PadStyle.controlStroke,
     );
     final double inset = size.shortestSide * 0.032;
     canvas.drawCircle(

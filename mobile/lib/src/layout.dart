@@ -133,27 +133,40 @@ class AppSettings {
     this.port = kDefaultPort,
     this.deadzone = 0.13,
     this.haptics = true,
+    this.backgroundColor = 0xFF000000,
+    this.backgroundImage = '',
+    this.backgroundDim = 0.28,
   });
 
   String host;
   int port;
   double deadzone;
   bool haptics;
+  int backgroundColor;
+  String backgroundImage;
+  double backgroundDim;
 
   static const String _hostKey = 'pspPad.host';
   static const String _portKey = 'pspPad.port';
   static const String _deadzoneKey = 'pspPad.deadzone';
   static const String _hapticsKey = 'pspPad.haptics';
+  static const String _backgroundColorKey = 'pspPad.backgroundColor';
+  static const String _backgroundImageKey = 'pspPad.backgroundImage';
+  static const String _backgroundDimKey = 'pspPad.backgroundDim';
 
   static Future<AppSettings> load() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final int port = prefs.getInt(_portKey) ?? kDefaultPort;
     final double deadzone = prefs.getDouble(_deadzoneKey) ?? 0.13;
+    final double backgroundDim = prefs.getDouble(_backgroundDimKey) ?? 0.28;
     return AppSettings(
       host: prefs.getString(_hostKey) ?? '',
       port: port >= 1 && port <= 65535 ? port : kDefaultPort,
       deadzone: deadzone.clamp(0.0, 0.35),
       haptics: prefs.getBool(_hapticsKey) ?? true,
+      backgroundColor: prefs.getInt(_backgroundColorKey) ?? 0xFF000000,
+      backgroundImage: prefs.getString(_backgroundImageKey) ?? '',
+      backgroundDim: backgroundDim.clamp(0.0, 0.9),
     );
   }
 
@@ -163,6 +176,9 @@ class AppSettings {
     await prefs.setInt(_portKey, port);
     await prefs.setDouble(_deadzoneKey, deadzone);
     await prefs.setBool(_hapticsKey, haptics);
+    await prefs.setInt(_backgroundColorKey, backgroundColor);
+    await prefs.setString(_backgroundImageKey, backgroundImage);
+    await prefs.setDouble(_backgroundDimKey, backgroundDim);
   }
 }
 

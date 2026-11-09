@@ -32,6 +32,9 @@ class PadIcons {
   static const String power =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.2 6.2a8 8 0 1 0 11.6 0"/></svg>';
 
+  static const String image =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.4"/><path d="m21 15-5-5L5 21"/></svg>';
+
   static const String ff =
       '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.5 5.4v13.2L11.6 12 4.5 5.4Zm7 0v13.2L18.6 12 11.5 5.4Z"/></svg>';
 

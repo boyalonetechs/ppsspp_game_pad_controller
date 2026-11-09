@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:psp_phone_pad_app/src/layout.dart';
 import 'package:psp_phone_pad_app/src/protocol.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   test('encodes a full pad snapshot', () {
@@ -76,5 +77,21 @@ void main() {
     expect(layout.groups[PadGroup.l]!.scale, 2.5);
     expect(layout.groups[PadGroup.l]!.dx, -4000);
     expect(layout.groups[PadGroup.l]!.spread, 28);
+  });
+
+  test('background settings round-trip', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final AppSettings settings = AppSettings(
+      backgroundColor: 0xFF112233,
+      backgroundImage: '/tmp/pad-background.jpg',
+      backgroundDim: 0.42,
+    );
+
+    await settings.save();
+    final AppSettings restored = await AppSettings.load();
+
+    expect(restored.backgroundColor, 0xFF112233);
+    expect(restored.backgroundImage, '/tmp/pad-background.jpg');
+    expect(restored.backgroundDim, 0.42);
   });
 }
